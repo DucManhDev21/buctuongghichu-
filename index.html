@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bức Tường Ghi Chú</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --text-color: #333;
+            --wall-bg: repeating-linear-gradient(45deg, #e5e5f7 0, #e5e5f7 2px, #f4f4f9 0, #f4f4f9 50px);
+            --panel-bg: rgba(255, 255, 255, 0.9);
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        body.dark-mode {
+            --bg-color: #1a1a2e;
+            --text-color: #f4f4f9;
+            --wall-bg: repeating-linear-gradient(45deg, #2a2a4a 0, #2a2a4a 2px, #1a1a2e 0, #1a1a2e 50px);
+            --panel-bg: rgba(30, 30, 46, 0.9);
+            --shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden; /* Prevent default scrolling */
+        }
+
+        /* Giao diện điều khiển (Fixed) */
+        .ui-controls {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--panel-bg);
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: var(--shadow);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        input, button {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            outline: none;
+            background: transparent;
+            color: var(--text-color);
+        }
+
+        button {
+            cursor: pointer;
+            background: #4caf50;
+            color: white;
+            border: none;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-icon {
+            background: #ff9800;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Bức tường */
+        #wall-wrapper {
+            width: 100vw;
+            height: 100vh;
+            overflow: auto;
+            cursor: grab;
+            position: relative;
+        }
+        
+        #wall-wrapper:active {
+            cursor: grabbing;
+        }
+
+        #wall {
+            width: 5000px; /* Bức tường rất rộng */
+            height: 5000px;
+            background: var(--wall-bg);
+            position: relative;
+        }
+
+        /* Ghi chú */
+        .note {
+            position: absolute;
+            width: 220px;
+            min-height: 220px;
+            padding: 20px;
+            background-color: #fffacd;
+            box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
+            cursor: grab;
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.2s;
+            border-top-left-radius: 2px;
+            border-bottom-right-radius: 20px;
+            color: #000;
+        }
+
+        .note:active {
+            cursor: grabbing;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+            z-index: 100 !important;
+        }
+
+        .note-header {
+            font-weight: bold;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .note-content {
+            flex-grow: 1;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+
+        /* Pin/Ghim trên ghi chú */
+        .pin {
+            width: 12px;
+            height: 12px;
+            background-color: #e74c3c;
+            border-radius: 50%;
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.3), 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Modal thêm ghi chú */
+        #add-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            padding: 30px;
+            border-radius: 10px;
+            width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: var(--shadow);
+        }
+
+        .modal-content textarea {
+            height: 100px;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            resize: none;
+            background: transparent;
+            color: var(--text-color);
+        }
+
+        .color-picker {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .color-btn {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        .color-btn.active {
+            border-color: var(--text-color);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .btn-cancel {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Giao diện thanh công cụ -->
+    <div class="ui-controls">
+        <button id="theme-toggle" class="btn-icon" title="Sáng/Tối"><i class="fa-solid fa-moon"></i></button>
+        <input type="text" id="search-input" placeholder="Nhập tên để tìm kiếm...">
+        <button id="open-modal-btn"><i class="fa-solid fa-plus"></i> Dán ghi chú</button>
+    </div>
+
+    <!-- Vùng chứa bức tường -->
+    <div id="wall-wrapper">
+        <div id="wall">
+            <!-- Ghi chú sẽ được render ở đây -->
+        </div>
+    </div>
+
+    <!-- Modal Thêm Ghi Chú -->
+    <div id="add-modal">
+        <div class="modal-content">
+            <h3 style="color: var(--text-color)">Dán ghi chú mới</h3>
+            <input type="text" id="note-name" placeholder="Tên của bạn (Bắt buộc)">
+            <textarea id="note-text" placeholder="Bạn muốn viết gì?"></textarea>
+            
+            <div class="color-picker">
+                <div class="color-btn active" style="background: #fffacd;" data-color="#fffacd"></div>
+                <div class="color-btn" style="background: #ffc0cb;" data-color="#ffc0cb"></div>
+                <div class="color-btn" style="background: #add8e6;" data-color="#add8e6"></div>
+                <div class="color-btn" style="background: #98fb98;" data-color="#98fb98"></div>
+                <div class="color-btn" style="background: #dda0dd;" data-color="#dda0dd"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" id="close-modal-btn">Hủy</button>
+                <button id="save-note-btn">Dán lên tường</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cấu hình Firebase -->
+    <script type="module">
+        // Import Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZiGa7KakG43YbCuYw1VYBwNdGgivVZtU",
+            authDomain: "buctuongghichu.firebaseapp.com",
+            projectId: "buctuongghichu",
+            storageBucket: "buctuongghichu.firebasestorage.app",
+            messagingSenderId: "542301209901",
+            appId: "1:542301209901:web:f142e4a549e50ede0d7fa4",
+            measurementId: "G-V7NQZK0T1H"
+        };
+
+        // Khởi tạo Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const notesCollection = collection(db, "notes");
+
+        // UI Elements
+        const wallWrapper = document.getElementById('wall-wrapper');
+        const wall = document.getElementById('wall');
+        const modal = document.getElementById('add-modal');
+        const searchInput = document.getElementById('search-input');
+        const themeToggle = document.getElementById('theme-toggle');
+        let selectedColor = '#fffacd';
+
+        // --- CHẾ ĐỘ SÁNG / TỐI ---
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const icon = themeToggle.querySelector('i');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                icon.classList.replace('fa-sun', 'fa-moon');
+            }
+        });
+
+        // --- TÌM KIẾM THEO TÊN ---
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const notes = document.querySelectorAll('.note');
+            notes.forEach(note => {
+                const authorName = note.getAttribute('data-name').toLowerCase();
+                if(authorName.includes(searchTerm)) {
+                    note.style.display = 'flex';
+                } else {
+                    note.style.display = 'none';
+                }
+            });
+        });
+
+        // --- KÉO BỨC TƯỜNG (PANNING) ---
+        let isPanning = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        wallWrapper.addEventListener('mousedown', (e) => {
+            // Không pan nếu click vào nút hoặc click vào ghi chú
+            if (e.target.closest('.note') || e.target.closest('.ui-controls')) return;
+            
+            isPanning = true;
+            startX = e.pageX - wallWrapper.offsetLeft;
+            startY = e.pageY - wallWrapper.offsetTop;
+            scrollLeft = wallWrapper.scrollLeft;
+            scrollTop = wallWrapper.scrollTop;
+        });
+
+        wallWrapper.addEventListener('mouseleave', () => isPanning = false);
+        wallWrapper.addEventListener('mouseup', () => isPanning = false);
+        wallWrapper.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            e.preventDefault();
+            const x = e.pageX - wallWrapper.offsetLeft;
+            const y = e.pageY - wallWrapper.offsetTop;
+            const walkX = (x - startX);
+            const walkY = (y - startY);
+            wallWrapper.scrollLeft = scrollLeft - walkX;
+            wallWrapper.scrollTop = scrollTop - walkY;
+        });
+
+        // Căn giữa bức tường khi mới tải trang
+        window.onload = () => {
+            wallWrapper.scrollLeft = (5000 - window.innerWidth) / 2;
+            wallWrapper.scrollTop = (5000 - window.innerHeight) / 2;
+        };
+
+        // --- KÉO THẢ GHI CHÚ ---
+        let draggedNote = null;
+        let noteOffsetX, noteOffsetY;
+
+        function attachDragEvents(noteElement, docId) {
+            noteElement.addEventListener('mousedown', (e) => {
+                draggedNote = noteElement;
+                const rect = noteElement.getBoundingClientRect();
+                const wallRect = wall.getBoundingClientRect();
+                
+                noteOffsetX = e.clientX - rect.left;
+                noteOffsetY = e.clientY - rect.top;
+                
+                // Đưa note lên trên cùng khi nắm kéo
+                document.querySelectorAll('.note').forEach(n => n.style.zIndex = 1);
+                noteElement.style.zIndex = 100;
+            });
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if (draggedNote) {
+                const wallRect = wall.getBoundingClientRect();
+                // Tính toán tọa độ x, y so với wall
+                let newX = e.clientX - wallRect.left - noteOffsetX;
+                let newY = e.clientY - wallRect.top - noteOffsetY;
+                
+                // Giới hạn không cho kéo ra ngoài bức tường
+                newX = Math.max(0, Math.min(newX, 5000 - 220));
+                newY = Math.max(0, Math.min(newY, 5000 - 220));
+
+                draggedNote.style.left = `${newX}px`;
+                draggedNote.style.top = `${newY}px`;
+            }
+        });
+
+        window.addEventListener('mouseup', async () => {
+            if (draggedNote) {
+                const docId = draggedNote.getAttribute('data-id');
+                const x = parseFloat(draggedNote.style.left);
+                const y = parseFloat(draggedNote.style.top);
+                
+                draggedNote = null;
+
+                // Cập nhật tọa độ mới lên Firebase
+                try {
+                    const noteRef = doc(db, "notes", docId);
+                    await updateDoc(noteRef, { x, y });
+                } catch (error) {
+                    console.error("Lỗi cập nhật vị trí:", error);
+                }
+            }
+        });
+
+        // --- XỬ LÝ THÊM GHI CHÚ ---
+        document.getElementById('open-modal-btn').addEventListener('click', () => {
+            modal.style.display = 'flex';
+        });
+
+        document.getElementById('close-modal-btn').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        // Chọn màu ghi chú
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedColor = e.target.getAttribute('data-color');
+            });
+        });
+
+        // Lưu ghi chú
+        document.getElementById('save-note-btn').addEventListener('click', async () => {
+            const name = document.getElementById('note-name').value.trim();
+            const text = document.getElementById('note-text').value.trim();
+
+            if (!name || !text) {
+                alert("Vui lòng nhập đầy đủ Tên và Nội dung!");
+                return;
+            }
+
+            // Dán ở vị trí giữa màn hình hiện tại của người dùng
+            const x = wallWrapper.scrollLeft + window.innerWidth / 2 - 110;
+            const y = wallWrapper.scrollTop + window.innerHeight / 2 - 110;
+
+            try {
+                await addDoc(notesCollection, {
+                    name: name,
+                    text: text,
+                    color: selectedColor,
+                    x: x,
+                    y: y,
+                    timestamp: new Date().getTime()
+                });
+                
+                // Reset form
+                document.getElementById('note-name').value = '';
+                document.getElementById('note-text').value = '';
+                modal.style.display = 'none';
+            } catch (error) {
+                console.error("Lỗi khi thêm ghi chú: ", error);
+                alert("Lỗi kết nối. Vui lòng thử lại!");
+            }
+        });
+
+        // --- LẤY VÀ HIỂN THỊ DỮ LIỆU THỰC TẾ TỪ FIREBASE ---
+        onSnapshot(notesCollection, (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                const data = change.doc.data();
+                const docId = change.doc.id;
+
+                if (change.type === "added") {
+                    createNoteElement(docId, data);
+                }
+                if (change.type === "modified") {
+                    // Nếu có người khác kéo thả, cập nhật lại tọa độ (tránh cập nhật note mình đang giữ)
+                    const noteEl = document.getElementById(docId);
+                    if (noteEl && draggedNote !== noteEl) {
+                        noteEl.style.left = `${data.x}px`;
+                        noteEl.style.top = `${data.y}px`;
+                    }
+                }
+                if (change.type === "removed") {
+                    const noteEl = document.getElementById(docId);
+                    if (noteEl) noteEl.remove();
+                }
+            });
+        });
+
+        // Hàm tạo element ghi chú trên giao diện
+        function createNoteElement(id, data) {
+            const note = document.createElement('div');
+            note.className = 'note';
+            note.id = id;
+            note.setAttribute('data-id', id);
+            note.setAttribute('data-name', data.name); // Để phục vụ tìm kiếm
+            
+            note.style.left = `${data.x}px`;
+            note.style.top = `${data.y}px`;
+            note.style.backgroundColor = data.color;
+
+            // Xoay ngẫu nhiên một chút cho tự nhiên
+            const rotation = Math.floor(Math.random() * 10) - 5;
+            note.style.transform = `rotate(${rotation}deg)`;
+
+            note.innerHTML = `
+                <div class="pin"></div>
+                <div class="note-header">
+                    <span><i class="fa-solid fa-user"></i> ${escapeHTML(data.name)}</span>
+                </div>
+                <div class="note-content">${escapeHTML(data.text)}</div>
+            `;
+
+            wall.appendChild(note);
+            attachDragEvents(note, id);
+        }
+
+        // Hàm chống XSS (Bảo mật)
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>
