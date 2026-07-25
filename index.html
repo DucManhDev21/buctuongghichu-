@@ -1,518 +1,591 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bức Tường Ghi Chú</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-color: #f4f4f9;
-            --text-color: #333;
-            --wall-bg: repeating-linear-gradient(45deg, #e5e5f7 0, #e5e5f7 2px, #f4f4f9 0, #f4f4f9 50px);
-            --panel-bg: rgba(255, 255, 255, 0.9);
-            --shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bức Tường Ghi Chú</title>
+  
+  <!-- FontAwesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Thư viện hỗ trợ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.3/purify.min.js"></script>
 
-        body.dark-mode {
-            --bg-color: #1a1a2e;
-            --text-color: #f4f4f9;
-            --wall-bg: repeating-linear-gradient(45deg, #2a2a4a 0, #2a2a4a 2px, #1a1a2e 0, #1a1a2e 50px);
-            --panel-bg: rgba(30, 30, 46, 0.9);
-            --shadow: 0 4px 6px rgba(0,0,0,0.5);
-        }
+  <style>
+    /* --- CSS BIẾN & CƠ BẢN --- */
+    :root {
+      --bg-color: #f4f7f6;
+      --wall-bg: #e2e8f0;
+      --text-color: #333;
+      --header-bg: #ffffff;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    body.dark-mode {
+      --bg-color: #1a202c; --wall-bg: #2d3748; --text-color: #f7fafc;
+      --header-bg: #1a202c; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); overflow: hidden; }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+    /* --- HEADER --- */
+    header {
+      position: fixed; top: 0; left: 0; width: 100%; height: 70px;
+      background: var(--header-bg); box-shadow: var(--shadow);
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0 20px; z-index: 1000; transition: background 0.3s;
+    }
+    .logo { font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+    .search-bar { flex-grow: 1; max-width: 400px; margin: 0 20px; position: relative; }
+    .search-bar input { width: 100%; padding: 10px 15px 10px 40px; border-radius: 20px; border: 1px solid #ccc; outline: none; background: transparent; color: var(--text-color); }
+    .search-bar i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; }
+    
+    .actions { display: flex; gap: 10px; }
+    button { cursor: pointer; border: none; outline: none; transition: 0.2s; }
+    .btn-icon { width: 40px; height: 40px; border-radius: 50%; background: #edf2f7; color: #333; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; }
+    body.dark-mode .btn-icon { background: #4a5568; color: #fff; }
+    .btn-icon:hover { transform: scale(1.1); }
+    .btn-add { background: #4299e1; color: white; padding: 0 15px; border-radius: 20px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+    .btn-add:hover { background: #3182ce; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            overflow: hidden; /* Prevent default scrolling */
-        }
+    /* --- INFINITE CANVAS --- */
+    #viewport { position: absolute; top: 70px; left: 0; width: 100vw; height: calc(100vh - 70px); overflow: hidden; background: var(--wall-bg); }
+    #viewport.panning { cursor: grabbing !important; }
+    #wall { position: absolute; top: 0; left: 0; width: 10000px; height: 10000px; transform-origin: 0 0; }
+    .bg-grid { background-image: radial-gradient(rgba(0,0,0,0.1) 1.5px, transparent 1.5px); background-size: 30px 30px; }
+    body.dark-mode .bg-grid { background-image: radial-gradient(rgba(255,255,255,0.1) 1.5px, transparent 1.5px); }
 
-        /* Giao diện điều khiển (Fixed) */
-        .ui-controls {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--panel-bg);
-            padding: 10px 20px;
-            border-radius: 30px;
-            box-shadow: var(--shadow);
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-        }
+    /* --- STICKY NOTES --- */
+    .note {
+      position: absolute; width: 280px; min-height: 250px; padding: 15px 15px 45px 15px;
+      border-radius: 2px; box-shadow: var(--shadow); display: flex; flex-direction: column;
+      cursor: grab; user-select: none; 
+      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
+      transform: rotate(var(--angle, 0deg)); /* Tilting effect */
+    }
+    .note:hover, .note:active, .note.dragging {
+      transform: rotate(0deg) scale(1.05); /* Straighten on interaction */
+      box-shadow: 0 15px 20px rgba(0,0,0,0.2); z-index: 100 !important;
+    }
+    .note.pinned { cursor: default; }
+    .note.pinned:active { transform: rotate(var(--angle, 0deg)) scale(1); }
+    
+    .note-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; color:#222;}
+    .note-content { flex-grow: 1; font-size: 0.95rem; line-height: 1.4; color: #222; word-wrap: break-word; overflow: hidden; }
+    
+    /* Markdown Styles in Note */
+    .note-content img { max-width: 100%; border-radius: 4px; margin-top: 5px; }
+    .note-content ul, .note-content ol { padding-left: 20px; }
+    .hashtag { color: #2b6cb0; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .hashtag:hover { text-decoration: underline; background: rgba(255,255,255,0.5); border-radius: 3px; }
+    
+    /* Reactions Footer */
+    .note-footer { position: absolute; bottom: 10px; left: 15px; right: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .reactions { display: flex; gap: 5px; }
+    .reaction-btn { background: rgba(255,255,255,0.5); border: none; border-radius: 12px; padding: 2px 8px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 3px; }
+    .reaction-btn:hover { background: rgba(255,255,255,0.9); }
+    
+    /* Actions */
+    .note-actions { display: flex; gap: 5px; }
+    .btn-action { background: transparent; color: rgba(0,0,0,0.5); border: none; font-size: 1rem; cursor: pointer; }
+    .btn-action:hover { color: #333; }
+    .btn-action.delete:hover { color: red; }
+    .btn-action.pinned { color: #e53e3e; }
 
-        input, button {
-            padding: 10px 15px;
-            border: 1px solid #ccc;
-            border-radius: 20px;
-            outline: none;
-            background: transparent;
-            color: var(--text-color);
-        }
+    /* --- LIVE CURSORS --- */
+    .live-cursor { position: absolute; pointer-events: none; z-index: 999; display: flex; flex-direction: column; align-items: flex-start; transition: transform 0.5s linear; }
+    .cursor-icon { font-size: 18px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3)); transform: rotate(-20deg); }
+    .cursor-name { background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-top: -5px; margin-left: 10px; white-space: nowrap; }
 
-        button {
-            cursor: pointer;
-            background: #4caf50;
-            color: white;
-            border: none;
-            font-weight: bold;
-            transition: transform 0.2s;
-        }
-
-        button:hover {
-            transform: scale(1.05);
-        }
-
-        .btn-icon {
-            background: #ff9800;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* Bức tường */
-        #wall-wrapper {
-            width: 100vw;
-            height: 100vh;
-            overflow: auto;
-            cursor: grab;
-            position: relative;
-        }
-        
-        #wall-wrapper:active {
-            cursor: grabbing;
-        }
-
-        #wall {
-            width: 5000px; /* Bức tường rất rộng */
-            height: 5000px;
-            background: var(--wall-bg);
-            position: relative;
-        }
-
-        /* Ghi chú */
-        .note {
-            position: absolute;
-            width: 220px;
-            min-height: 220px;
-            padding: 20px;
-            background-color: #fffacd;
-            box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
-            cursor: grab;
-            user-select: none;
-            display: flex;
-            flex-direction: column;
-            transition: box-shadow 0.2s;
-            border-top-left-radius: 2px;
-            border-bottom-right-radius: 20px;
-            color: #000;
-        }
-
-        .note:active {
-            cursor: grabbing;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
-            z-index: 100 !important;
-        }
-
-        .note-header {
-            font-weight: bold;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .note-content {
-            flex-grow: 1;
-            word-wrap: break-word;
-            white-space: pre-wrap;
-            font-family: 'Comic Sans MS', cursive, sans-serif;
-        }
-
-        /* Pin/Ghim trên ghi chú */
-        .pin {
-            width: 12px;
-            height: 12px;
-            background-color: #e74c3c;
-            border-radius: 50%;
-            position: absolute;
-            top: 5px;
-            left: 50%;
-            transform: translateX(-50%);
-            box-shadow: inset -2px -2px 4px rgba(0,0,0,0.3), 1px 1px 2px rgba(0,0,0,0.5);
-        }
-
-        /* Modal thêm ghi chú */
-        #add-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.5);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: var(--panel-bg);
-            padding: 30px;
-            border-radius: 10px;
-            width: 350px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            box-shadow: var(--shadow);
-        }
-
-        .modal-content textarea {
-            height: 100px;
-            padding: 10px;
-            border-radius: 10px;
-            border: 1px solid #ccc;
-            resize: none;
-            background: transparent;
-            color: var(--text-color);
-        }
-
-        .color-picker {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .color-btn {
-            width: 30px; height: 30px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            cursor: pointer;
-        }
-
-        .color-btn.active {
-            border-color: var(--text-color);
-        }
-
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-        
-        .btn-cancel {
-            background: #e74c3c;
-        }
-    </style>
+    /* --- MODALS --- */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; }
+    .modal { background: var(--header-bg); width: 90%; max-width: 450px; padding: 25px; border-radius: 12px; box-shadow: var(--shadow); }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; background: transparent; color: var(--text-color); }
+    .color-picker { display: flex; gap: 10px; margin-top: 5px; }
+    .color-option { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+    .color-option.selected { border-color: #333; transform: scale(1.1); }
+    body.dark-mode .color-option.selected { border-color: #fff; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .btn-save { padding: 10px 20px; border-radius: 6px; background: #48bb78; color: white; border:none; font-weight: bold; cursor: pointer;}
+    .hidden { display: none !important; }
+    
+    /* Tutorial Overlay */
+    #tutorial { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; z-index: 1500; font-size: 0.9rem; pointer-events: none; opacity: 0.8; }
+  </style>
 </head>
 <body>
 
-    <!-- Giao diện thanh công cụ -->
-    <div class="ui-controls">
-        <button id="theme-toggle" class="btn-icon" title="Sáng/Tối"><i class="fa-solid fa-moon"></i></button>
-        <input type="text" id="search-input" placeholder="Nhập tên để tìm kiếm...">
-        <button id="open-modal-btn"><i class="fa-solid fa-plus"></i> Dán ghi chú</button>
+  <header>
+    <div class="logo"><i class="fas fa-layer-group" style="color:#ecc94b;"></i> <span>TeamBoard</span></div>
+    <div class="search-bar">
+      <i class="fas fa-search"></i>
+      <input type="text" id="searchInput" placeholder="Lọc theo #tag hoặc nội dung...">
     </div>
+    <div class="actions">
+      <button class="btn-icon" id="exportBtn" title="Lưu thành ảnh"><i class="fas fa-camera"></i></button>
+      <button class="btn-icon" id="themeToggle" title="Chế độ tối"><i class="fas fa-moon"></i></button>
+      <button class="btn-add" id="openModalBtn"><i class="fas fa-plus"></i> <span>Thêm Ghi Chú</span></button>
+    </div>
+  </header>
 
-    <!-- Vùng chứa bức tường -->
-    <div id="wall-wrapper">
-        <div id="wall">
-            <!-- Ghi chú sẽ được render ở đây -->
+  <div id="tutorial"><i class="fas fa-info-circle"></i> Giữ phím <b>Space + Kéo chuột</b> để di chuyển tường | <b>Cuộn chuột</b> để Zoom</div>
+
+  <div id="viewport">
+    <div id="wall" class="bg-grid">
+      <!-- Notes & Cursors sẽ render vào đây -->
+    </div>
+  </div>
+
+  <!-- Modal Đăng nhập / Nhập tên -->
+  <div class="modal-overlay" id="authModal" style="display: flex;">
+    <div class="modal">
+      <h2 style="text-align:center; margin-bottom: 20px;">Vào Không Gian Làm Việc</h2>
+      <div class="form-group">
+        <label>Tên hiển thị của bạn</label>
+        <input type="text" id="displayNameInput" placeholder="Nhập tên để mọi người nhận ra bạn..." required>
+      </div>
+      <button class="btn-save" style="width: 100%" id="enterBoardBtn">Tham gia ngay</button>
+    </div>
+  </div>
+
+  <!-- Modal Tạo Ghi Chú -->
+  <div class="modal-overlay" id="noteModal">
+    <div class="modal">
+      <h2>Tạo ghi chú mới</h2>
+      <div class="form-group">
+        <label>Nội dung (Hỗ trợ Markdown & #hashtag)</label>
+        <textarea id="contentInput" rows="5" placeholder="**In đậm**, *In nghiêng*\n#quan_trong\n![ảnh](url)" required></textarea>
+      </div>
+      <div class="form-group">
+        <label>Màu sắc</label>
+        <div class="color-picker">
+          <div class="color-option selected" data-color="#fef3c7" style="background-color: #fef3c7;"></div>
+          <div class="color-option" data-color="#fce7f3" style="background-color: #fce7f3;"></div>
+          <div class="color-option" data-color="#e0e7ff" style="background-color: #e0e7ff;"></div>
+          <div class="color-option" data-color="#d1fae5" style="background-color: #d1fae5;"></div>
         </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-icon" style="border-radius:6px; width:auto; padding:0 15px;" id="closeModalBtn">Hủy</button>
+        <button class="btn-save" id="saveNoteBtn">Dán lên tường</button>
+      </div>
     </div>
+  </div>
 
-    <!-- Modal Thêm Ghi Chú -->
-    <div id="add-modal">
-        <div class="modal-content">
-            <h3 style="color: var(--text-color)">Dán ghi chú mới</h3>
-            <input type="text" id="note-name" placeholder="Tên của bạn (Bắt buộc)">
-            <textarea id="note-text" placeholder="Bạn muốn viết gì?"></textarea>
-            
-            <div class="color-picker">
-                <div class="color-btn active" style="background: #fffacd;" data-color="#fffacd"></div>
-                <div class="color-btn" style="background: #ffc0cb;" data-color="#ffc0cb"></div>
-                <div class="color-btn" style="background: #add8e6;" data-color="#add8e6"></div>
-                <div class="color-btn" style="background: #98fb98;" data-color="#98fb98"></div>
-                <div class="color-btn" style="background: #dda0dd;" data-color="#dda0dd"></div>
-            </div>
+  <!-- FIREBASE SCRIPTS -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
-            <div class="modal-actions">
-                <button class="btn-cancel" id="close-modal-btn">Hủy</button>
-                <button id="save-note-btn">Dán lên tường</button>
-            </div>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAZiGa7KakG43YbCuYw1VYBwNdGgivVZtU",
+      authDomain: "buctuongghichu.firebaseapp.com",
+      projectId: "buctuongghichu",
+      storageBucket: "buctuongghichu.firebasestorage.app",
+      messagingSenderId: "542301209901",
+      appId: "1:542301209901:web:f142e4a549e50ede0d7fa4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    
+    // Collections
+    const notesColl = collection(db, "notes");
+    const cursorsColl = collection(db, "cursors");
+
+    // Global State
+    let currentUser = null;
+    let userName = "";
+    let userColor = ['#e53e3e', '#3182ce', '#38a169', '#d69e2e', '#805ad5'][Math.floor(Math.random()*5)];
+    
+    // Pan & Zoom State
+    const viewport = document.getElementById('viewport');
+    const wall = document.getElementById('wall');
+    let scale = 1;
+    let panX = -3500; // Đặt vị trí view ban đầu ở giữa bức tường 10,000px
+    let panY = -3500;
+    
+    function updateTransform() {
+      wall.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    }
+    updateTransform();
+
+    /* =========================================
+       1. FIREBASE AUTH & USER IDENTITY
+    ========================================= */
+    const authModal = document.getElementById('authModal');
+    document.getElementById('enterBoardBtn').addEventListener('click', () => {
+      const name = document.getElementById('displayNameInput').value.trim();
+      if(name) {
+        userName = name;
+        signInAnonymously(auth).catch(err => alert("Lỗi kết nối: " + err.message));
+      } else {
+        alert("Vui lòng nhập tên của bạn!");
+      }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user && userName) {
+        currentUser = user;
+        authModal.style.display = 'none';
+        startRealtimeListeners();
+      }
+    });
+
+    /* =========================================
+       2. PAN, ZOOM & INFINITE CANVAS
+    ========================================= */
+    let isPanning = false;
+    let startPanX = 0, startPanY = 0;
+    let isSpacePressed = false;
+
+    window.addEventListener('keydown', (e) => { if(e.code === 'Space' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') { isSpacePressed = true; viewport.classList.add('panning'); e.preventDefault(); }});
+    window.addEventListener('keyup', (e) => { if(e.code === 'Space') { isSpacePressed = false; viewport.classList.remove('panning'); }});
+
+    viewport.addEventListener('mousedown', (e) => {
+      if (isSpacePressed || e.button === 1 || e.target === viewport || e.target === wall) {
+        isPanning = true; startPanX = e.clientX - panX; startPanY = e.clientY - panY;
+      }
+    });
+    
+    window.addEventListener('mousemove', (e) => {
+      if (isPanning) { panX = e.clientX - startPanX; panY = e.clientY - startPanY; updateTransform(); }
+    });
+    
+    window.addEventListener('mouseup', () => { isPanning = false; });
+
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      // Zoom
+      if (e.ctrlKey || e.metaKey || isSpacePressed) {
+        const zoomSensitivity = 0.001;
+        const delta = -e.deltaY * zoomSensitivity;
+        let newScale = scale * Math.exp(delta);
+        newScale = Math.min(Math.max(0.3, newScale), 3); // Limit scale 0.3x to 3x
+        
+        // Zoom toward mouse pointer
+        const rect = viewport.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        panX = mouseX - (mouseX - panX) * (newScale / scale);
+        panY = mouseY - (mouseY - panY) * (newScale / scale);
+        scale = newScale;
+      } else {
+        // Trackpad panning
+        panX -= e.deltaX;
+        panY -= e.deltaY;
+      }
+      updateTransform();
+    }, { passive: false });
+
+    /* =========================================
+       3. LIVE CURSORS
+    ========================================= */
+    let lastCursorUpdate = 0;
+    window.addEventListener('mousemove', (e) => {
+      if(!currentUser) return;
+      const now = Date.now();
+      // Throttle upload 500ms to save Firestore quota
+      if (now - lastCursorUpdate > 500) {
+        // Calculate coordinates relative to the wall
+        const rect = viewport.getBoundingClientRect();
+        const wallX = (e.clientX - rect.left - panX) / scale;
+        const wallY = (e.clientY - rect.top - panY) / scale;
+        
+        setDoc(doc(db, "cursors", currentUser.uid), {
+          x: wallX, y: wallY, name: userName, color: userColor, timestamp: now
+        }, { merge: true });
+        lastCursorUpdate = now;
+      }
+    });
+
+    onSnapshot(cursorsColl, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        const data = change.doc.data();
+        if (change.doc.id === currentUser?.uid) return; // Ignore own cursor
+        
+        // Remove dead cursors (> 15 seconds old)
+        if (Date.now() - data.timestamp > 15000) {
+          const el = document.getElementById(`cursor-${change.doc.id}`);
+          if (el) el.remove();
+          return;
+        }
+
+        let cursorEl = document.getElementById(`cursor-${change.doc.id}`);
+        if (!cursorEl) {
+          cursorEl = document.createElement('div');
+          cursorEl.id = `cursor-${change.doc.id}`;
+          cursorEl.className = 'live-cursor';
+          cursorEl.innerHTML = `
+            <i class="fas fa-mouse-pointer cursor-icon" style="color: ${data.color}"></i>
+            <div class="cursor-name" style="background: ${data.color}">${data.name}</div>
+          `;
+          wall.appendChild(cursorEl);
+        }
+        cursorEl.style.transform = `translate(${data.x}px, ${data.y}px)`;
+      });
+    });
+
+    /* =========================================
+       4. GHI CHÚ (CRUD, MARKDOWN, TƯƠNG TÁC)
+    ========================================= */
+    let selectedColor = '#fef3c7';
+    document.querySelectorAll('.color-option').forEach(el => {
+      el.addEventListener('click', (e) => {
+        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+        e.target.classList.add('selected');
+        selectedColor = e.target.getAttribute('data-color');
+      });
+    });
+
+    document.getElementById('openModalBtn').addEventListener('click', () => document.getElementById('noteModal').style.display = 'flex');
+    document.getElementById('closeModalBtn').addEventListener('click', () => document.getElementById('noteModal').style.display = 'none');
+
+    document.getElementById('saveNoteBtn').addEventListener('click', async () => {
+      const content = document.getElementById('contentInput').value.trim();
+      if (!content) return alert("Nội dung không được để trống!");
+      
+      // Calculate center of current view to place note
+      const rect = viewport.getBoundingClientRect();
+      const centerX = (rect.width / 2 - panX) / scale - 140; 
+      const centerY = (rect.height / 2 - panY) / scale - 125;
+      const angle = Math.floor(Math.random() * 7) - 3; // -3 to 3 degree tilt
+
+      const newNote = {
+        uid: currentUser.uid, author: userName, content: content, color: selectedColor,
+        x: centerX, y: centerY, angle: angle, isPinned: false,
+        reactions: { heart: 0, like: 0, fire: 0 },
+        createdAt: Date.now()
+      };
+
+      await addDoc(notesColl, newNote);
+      document.getElementById('contentInput').value = '';
+      document.getElementById('noteModal').style.display = 'none';
+    });
+
+    function startRealtimeListeners() {
+      onSnapshot(notesColl, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          const id = change.doc.id;
+          const data = change.doc.data();
+          if (change.type === "added") renderNote(id, data);
+          if (change.type === "modified") updateNoteDOM(id, data);
+          if (change.type === "removed") { const el = document.getElementById(id); if (el) el.remove(); }
+        });
+      });
+    }
+
+    // Markdown & XSS config
+    marked.setOptions({ breaks: true });
+    
+    function parseContent(text) {
+      // 1. Regex bọc #hashtag vào span
+      let html = text.replace(/#([\w_]+)/g, '<span class="hashtag" data-tag="$1">#$1</span>');
+      // 2. Parse Markdown
+      html = marked.parse(html);
+      // 3. Purify XSS (cho phép span class hashtag)
+      return DOMPurify.sanitize(html, { ADD_ATTR: ['data-tag'] });
+    }
+
+    function renderNote(id, data) {
+      const note = document.createElement('div');
+      note.className = 'note'; note.id = id;
+      note.style.backgroundColor = data.color;
+      note.style.setProperty('--angle', `${data.angle}deg`);
+      
+      const isOwner = currentUser.uid === data.uid;
+      
+      note.innerHTML = `
+        <div class="note-header">
+          <span><i class="fas fa-user-circle"></i> ${DOMPurify.sanitize(data.author)}</span>
+          <div class="note-actions">
+            ${isOwner ? `<button class="btn-action btn-pin ${data.isPinned ? 'pinned' : ''}" title="Khóa vị trí"><i class="fas ${data.isPinned ? 'fa-lock' : 'fa-thumbtack'}"></i></button>` : ''}
+            ${isOwner ? `<button class="btn-action delete" title="Xóa"><i class="fas fa-times"></i></button>` : ''}
+          </div>
         </div>
-    </div>
-
-    <!-- Cấu hình Firebase -->
-    <script type="module">
-        // Import Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAZiGa7KakG43YbCuYw1VYBwNdGgivVZtU",
-            authDomain: "buctuongghichu.firebaseapp.com",
-            projectId: "buctuongghichu",
-            storageBucket: "buctuongghichu.firebasestorage.app",
-            messagingSenderId: "542301209901",
-            appId: "1:542301209901:web:f142e4a549e50ede0d7fa4",
-            measurementId: "G-V7NQZK0T1H"
-        };
-
-        // Khởi tạo Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const notesCollection = collection(db, "notes");
-
-        // UI Elements
-        const wallWrapper = document.getElementById('wall-wrapper');
-        const wall = document.getElementById('wall');
-        const modal = document.getElementById('add-modal');
-        const searchInput = document.getElementById('search-input');
-        const themeToggle = document.getElementById('theme-toggle');
-        let selectedColor = '#fffacd';
-
-        // --- CHẾ ĐỘ SÁNG / TỐI ---
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            const icon = themeToggle.querySelector('i');
-            if (document.body.classList.contains('dark-mode')) {
-                icon.classList.replace('fa-moon', 'fa-sun');
-            } else {
-                icon.classList.replace('fa-sun', 'fa-moon');
-            }
+        <div class="note-content">${parseContent(data.content)}</div>
+        <div class="note-footer">
+          <div class="reactions">
+            <button class="reaction-btn" data-type="heart">❤️ <span>${data.reactions?.heart || 0}</span></button>
+            <button class="reaction-btn" data-type="like">👍 <span>${data.reactions?.like || 0}</span></button>
+            <button class="reaction-btn" data-type="fire">🔥 <span>${data.reactions?.fire || 0}</span></button>
+          </div>
+        </div>
+      `;
+      
+      updateNoteDOM(id, data, note); // Set position & Pin state
+      
+      // Events
+      if(isOwner) {
+        note.querySelector('.delete')?.addEventListener('click', () => { if(confirm("Xóa ghi chú?")) deleteDoc(doc(db, "notes", id)); });
+        note.querySelector('.btn-pin')?.addEventListener('click', () => updateDoc(doc(db, "notes", id), { isPinned: !data.isPinned }));
+      }
+      
+      // Reactions Event
+      note.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const type = btn.getAttribute('data-type');
+          updateDoc(doc(db, "notes", id), { [`reactions.${type}`]: (data.reactions[type] || 0) + 1 });
         });
+      });
 
-        // --- TÌM KIẾM THEO TÊN ---
-        searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const notes = document.querySelectorAll('.note');
-            notes.forEach(note => {
-                const authorName = note.getAttribute('data-name').toLowerCase();
-                if(authorName.includes(searchTerm)) {
-                    note.style.display = 'flex';
-                } else {
-                    note.style.display = 'none';
-                }
-            });
+      // Hashtag click filter
+      note.querySelectorAll('.hashtag').forEach(tag => {
+        tag.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const tagWord = "#" + tag.getAttribute('data-tag');
+          document.getElementById('searchInput').value = tagWord;
+          document.getElementById('searchInput').dispatchEvent(new Event('input'));
         });
+      });
 
-        // --- KÉO BỨC TƯỜNG (PANNING) ---
-        let isPanning = false;
-        let startX, startY, scrollLeft, scrollTop;
+      makeDraggable(note, id, data);
+      wall.appendChild(note);
+    }
 
-        wallWrapper.addEventListener('mousedown', (e) => {
-            // Không pan nếu click vào nút hoặc click vào ghi chú
-            if (e.target.closest('.note') || e.target.closest('.ui-controls')) return;
-            
-            isPanning = true;
-            startX = e.pageX - wallWrapper.offsetLeft;
-            startY = e.pageY - wallWrapper.offsetTop;
-            scrollLeft = wallWrapper.scrollLeft;
-            scrollTop = wallWrapper.scrollTop;
-        });
-
-        wallWrapper.addEventListener('mouseleave', () => isPanning = false);
-        wallWrapper.addEventListener('mouseup', () => isPanning = false);
-        wallWrapper.addEventListener('mousemove', (e) => {
-            if (!isPanning) return;
-            e.preventDefault();
-            const x = e.pageX - wallWrapper.offsetLeft;
-            const y = e.pageY - wallWrapper.offsetTop;
-            const walkX = (x - startX);
-            const walkY = (y - startY);
-            wallWrapper.scrollLeft = scrollLeft - walkX;
-            wallWrapper.scrollTop = scrollTop - walkY;
-        });
-
-        // Căn giữa bức tường khi mới tải trang
-        window.onload = () => {
-            wallWrapper.scrollLeft = (5000 - window.innerWidth) / 2;
-            wallWrapper.scrollTop = (5000 - window.innerHeight) / 2;
-        };
-
-        // --- KÉO THẢ GHI CHÚ ---
-        let draggedNote = null;
-        let noteOffsetX, noteOffsetY;
-
-        function attachDragEvents(noteElement, docId) {
-            noteElement.addEventListener('mousedown', (e) => {
-                draggedNote = noteElement;
-                const rect = noteElement.getBoundingClientRect();
-                const wallRect = wall.getBoundingClientRect();
-                
-                noteOffsetX = e.clientX - rect.left;
-                noteOffsetY = e.clientY - rect.top;
-                
-                // Đưa note lên trên cùng khi nắm kéo
-                document.querySelectorAll('.note').forEach(n => n.style.zIndex = 1);
-                noteElement.style.zIndex = 100;
-            });
+    function updateNoteDOM(id, data, existingNote = null) {
+      const note = existingNote || document.getElementById(id);
+      if (!note) return;
+      
+      note.style.left = `${data.x}px`;
+      note.style.top = `${data.y}px`;
+      if(data.isPinned) note.classList.add('pinned'); else note.classList.remove('pinned');
+      
+      if(!existingNote) {
+        note.querySelector('.note-content').innerHTML = parseContent(data.content);
+        note.style.backgroundColor = data.color;
+        
+        // Update reaction counts
+        note.querySelector('[data-type="heart"] span').innerText = data.reactions?.heart || 0;
+        note.querySelector('[data-type="like"] span').innerText = data.reactions?.like || 0;
+        note.querySelector('[data-type="fire"] span').innerText = data.reactions?.fire || 0;
+        
+        // Update Pin icon
+        const pinBtn = note.querySelector('.btn-pin');
+        if(pinBtn) {
+           pinBtn.className = `btn-action btn-pin ${data.isPinned ? 'pinned' : ''}`;
+           pinBtn.innerHTML = `<i class="fas ${data.isPinned ? 'fa-lock' : 'fa-thumbtack'}"></i>`;
         }
+      }
+    }
 
-        window.addEventListener('mousemove', (e) => {
-            if (draggedNote) {
-                const wallRect = wall.getBoundingClientRect();
-                // Tính toán tọa độ x, y so với wall
-                let newX = e.clientX - wallRect.left - noteOffsetX;
-                let newY = e.clientY - wallRect.top - noteOffsetY;
-                
-                // Giới hạn không cho kéo ra ngoài bức tường
-                newX = Math.max(0, Math.min(newX, 5000 - 220));
-                newY = Math.max(0, Math.min(newY, 5000 - 220));
+    /* =========================================
+       5. KÉO THẢ TƯƠNG TÍCH SCALE (DRAG & DROP)
+    ========================================= */
+    let maxZ = 100;
+    function makeDraggable(element, id, noteData) {
+      let isDragging = false, startX, startY, initialX, initialY;
 
-                draggedNote.style.left = `${newX}px`;
-                draggedNote.style.top = `${newY}px`;
-            }
+      const dragStart = (e) => {
+        if (element.classList.contains('pinned') || e.target.closest('button') || e.target.closest('.hashtag')) return;
+        isDragging = true;
+        maxZ++; element.style.zIndex = maxZ;
+        element.classList.add('dragging');
+        
+        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        
+        startX = clientX; startY = clientY;
+        initialX = parseFloat(element.style.left || 0);
+        initialY = parseFloat(element.style.top || 0);
+
+        document.addEventListener('mousemove', dragAction);
+        document.addEventListener('touchmove', dragAction, { passive: false });
+        document.addEventListener('mouseup', dragEnd);
+        document.addEventListener('touchend', dragEnd);
+      };
+
+      const dragAction = (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        
+        // Cần chia cho "scale" để quãng đường chuột đi khớp với quãng đường trên wall đã bị zoom
+        const dx = (clientX - startX) / scale;
+        const dy = (clientY - startY) / scale;
+        
+        element.style.left = `${initialX + dx}px`;
+        element.style.top = `${initialY + dy}px`;
+      };
+
+      const dragEnd = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        element.classList.remove('dragging');
+        document.removeEventListener('mousemove', dragAction);
+        document.removeEventListener('touchmove', dragAction);
+        document.removeEventListener('mouseup', dragEnd);
+        document.removeEventListener('touchend', dragEnd);
+
+        updateDoc(doc(db, "notes", id), {
+          x: parseFloat(element.style.left), y: parseFloat(element.style.top)
         });
+      };
 
-        window.addEventListener('mouseup', async () => {
-            if (draggedNote) {
-                const docId = draggedNote.getAttribute('data-id');
-                const x = parseFloat(draggedNote.style.left);
-                const y = parseFloat(draggedNote.style.top);
-                
-                draggedNote = null;
+      element.addEventListener('mousedown', dragStart);
+      element.addEventListener('touchstart', dragStart, { passive: false });
+    }
 
-                // Cập nhật tọa độ mới lên Firebase
-                try {
-                    const noteRef = doc(db, "notes", docId);
-                    await updateDoc(noteRef, { x, y });
-                } catch (error) {
-                    console.error("Lỗi cập nhật vị trí:", error);
-                }
-            }
+    /* =========================================
+       6. CÁC TIỆN ÍCH (TÌM KIẾM, THEME, EXPORT)
+    ========================================= */
+    
+    // Tìm kiếm / Lọc Hashtag
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      document.querySelectorAll('.note').forEach(note => {
+        const text = note.innerText.toLowerCase();
+        note.style.display = text.includes(q) ? 'flex' : 'none';
+      });
+    });
+
+    // Dark Mode
+    const themeBtn = document.getElementById('themeToggle');
+    if(localStorage.getItem('theme') === 'dark') { document.body.classList.add('dark-mode'); themeBtn.innerHTML = '<i class="fas fa-sun"></i>'; }
+    themeBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      themeBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    });
+
+    // Xuất Ảnh bằng html2canvas
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('exportBtn');
+      const oldIcon = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      
+      try {
+        // Tạm thời ẩn grid nền để ảnh xuất ra sạch sẽ hơn
+        wall.classList.remove('bg-grid');
+        
+        // Vì wall là 10,000px, chúng ta chỉ chụp Viewport hiển thị trên màn hình hiện tại
+        const canvas = await html2canvas(viewport, {
+          backgroundColor: document.body.classList.contains('dark-mode') ? '#2d3748' : '#e2e8f0',
+          useCORS: true,
+          scale: 2 // Xuất ảnh độ phân giải cao
         });
+        
+        wall.classList.add('bg-grid');
+        
+        const link = document.createElement('a');
+        link.download = `TeamBoard_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } catch (err) {
+        alert("Lỗi xuất ảnh: " + err.message);
+      } finally {
+        btn.innerHTML = oldIcon;
+      }
+    });
 
-        // --- XỬ LÝ THÊM GHI CHÚ ---
-        document.getElementById('open-modal-btn').addEventListener('click', () => {
-            modal.style.display = 'flex';
-        });
-
-        document.getElementById('close-modal-btn').addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-
-        // Chọn màu ghi chú
-        document.querySelectorAll('.color-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                selectedColor = e.target.getAttribute('data-color');
-            });
-        });
-
-        // Lưu ghi chú
-        document.getElementById('save-note-btn').addEventListener('click', async () => {
-            const name = document.getElementById('note-name').value.trim();
-            const text = document.getElementById('note-text').value.trim();
-
-            if (!name || !text) {
-                alert("Vui lòng nhập đầy đủ Tên và Nội dung!");
-                return;
-            }
-
-            // Dán ở vị trí giữa màn hình hiện tại của người dùng
-            const x = wallWrapper.scrollLeft + window.innerWidth / 2 - 110;
-            const y = wallWrapper.scrollTop + window.innerHeight / 2 - 110;
-
-            try {
-                await addDoc(notesCollection, {
-                    name: name,
-                    text: text,
-                    color: selectedColor,
-                    x: x,
-                    y: y,
-                    timestamp: new Date().getTime()
-                });
-                
-                // Reset form
-                document.getElementById('note-name').value = '';
-                document.getElementById('note-text').value = '';
-                modal.style.display = 'none';
-            } catch (error) {
-                console.error("Lỗi khi thêm ghi chú: ", error);
-                alert("Lỗi kết nối. Vui lòng thử lại!");
-            }
-        });
-
-        // --- LẤY VÀ HIỂN THỊ DỮ LIỆU THỰC TẾ TỪ FIREBASE ---
-        onSnapshot(notesCollection, (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                const data = change.doc.data();
-                const docId = change.doc.id;
-
-                if (change.type === "added") {
-                    createNoteElement(docId, data);
-                }
-                if (change.type === "modified") {
-                    // Nếu có người khác kéo thả, cập nhật lại tọa độ (tránh cập nhật note mình đang giữ)
-                    const noteEl = document.getElementById(docId);
-                    if (noteEl && draggedNote !== noteEl) {
-                        noteEl.style.left = `${data.x}px`;
-                        noteEl.style.top = `${data.y}px`;
-                    }
-                }
-                if (change.type === "removed") {
-                    const noteEl = document.getElementById(docId);
-                    if (noteEl) noteEl.remove();
-                }
-            });
-        });
-
-        // Hàm tạo element ghi chú trên giao diện
-        function createNoteElement(id, data) {
-            const note = document.createElement('div');
-            note.className = 'note';
-            note.id = id;
-            note.setAttribute('data-id', id);
-            note.setAttribute('data-name', data.name); // Để phục vụ tìm kiếm
-            
-            note.style.left = `${data.x}px`;
-            note.style.top = `${data.y}px`;
-            note.style.backgroundColor = data.color;
-
-            // Xoay ngẫu nhiên một chút cho tự nhiên
-            const rotation = Math.floor(Math.random() * 10) - 5;
-            note.style.transform = `rotate(${rotation}deg)`;
-
-            note.innerHTML = `
-                <div class="pin"></div>
-                <div class="note-header">
-                    <span><i class="fa-solid fa-user"></i> ${escapeHTML(data.name)}</span>
-                </div>
-                <div class="note-content">${escapeHTML(data.text)}</div>
-            `;
-
-            wall.appendChild(note);
-            attachDragEvents(note, id);
-        }
-
-        // Hàm chống XSS (Bảo mật)
-        function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, 
-                tag => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[tag] || tag)
-            );
-        }
-    </script>
+  </script>
 </body>
 </html>
