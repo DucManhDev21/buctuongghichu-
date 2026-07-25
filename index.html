@@ -3,15 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Bức Tường Ghi Chú</title>
-  
-  <!-- FontAwesome -->
+  <title>Bức tường Ghi chú Tương tác</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <!-- Thư viện hỗ trợ -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.3/purify.min.js"></script>
-
   <style>
     /* --- CSS BIẾN & CƠ BẢN --- */
     :root {
@@ -21,12 +14,26 @@
       --header-bg: #ffffff;
       --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
+
     body.dark-mode {
-      --bg-color: #1a202c; --wall-bg: #2d3748; --text-color: #f7fafc;
-      --header-bg: #1a202c; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+      --bg-color: #1a202c;
+      --wall-bg: #2d3748;
+      --text-color: #f7fafc;
+      --header-bg: #1a202c;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; }
-    body { background-color: var(--bg-color); color: var(--text-color); overflow: hidden; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+    /* Cập nhật body: Chặn native pull-to-refresh trên mobile và lấy màu nền của wall */
+    body { 
+        background-color: var(--wall-bg); 
+        color: var(--text-color); 
+        overflow: hidden; 
+        transition: background-color 0.3s; 
+        touch-action: none; 
+        user-select: none;
+    }
 
     /* --- HEADER --- */
     header {
@@ -35,132 +42,136 @@
       display: flex; justify-content: space-between; align-items: center;
       padding: 0 20px; z-index: 1000; transition: background 0.3s;
     }
+
     .logo { font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
-    .search-bar { flex-grow: 1; max-width: 400px; margin: 0 20px; position: relative; }
-    .search-bar input { width: 100%; padding: 10px 15px 10px 40px; border-radius: 20px; border: 1px solid #ccc; outline: none; background: transparent; color: var(--text-color); }
-    .search-bar i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; }
     
+    .search-bar {
+      flex-grow: 1; max-width: 350px; margin: 0 20px; position: relative;
+    }
+    
+    .search-bar input {
+      width: 100%; padding: 10px 15px 10px 40px; border-radius: 20px;
+      border: 1px solid #ccc; outline: none; background: transparent; color: var(--text-color);
+    }
+    
+    .search-bar i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; }
+
     .actions { display: flex; gap: 10px; }
     button { cursor: pointer; border: none; outline: none; transition: 0.2s; }
-    .btn-icon { width: 40px; height: 40px; border-radius: 50%; background: #edf2f7; color: #333; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; }
+    
+    .btn-icon {
+      width: 40px; height: 40px; border-radius: 50%; background: #edf2f7;
+      color: #333; display: flex; justify-content: center; align-items: center; font-size: 1.1rem;
+    }
     body.dark-mode .btn-icon { background: #4a5568; color: #fff; }
     .btn-icon:hover { transform: scale(1.1); }
-    .btn-add { background: #4299e1; color: white; padding: 0 15px; border-radius: 20px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+    
+    .btn-add {
+      background: #4299e1; color: white; padding: 0 20px; border-radius: 20px;
+      font-weight: bold; display: flex; align-items: center; gap: 8px;
+    }
     .btn-add:hover { background: #3182ce; }
 
-    /* --- INFINITE CANVAS --- */
-    #viewport { position: absolute; top: 70px; left: 0; width: 100vw; height: calc(100vh - 70px); overflow: hidden; background: var(--wall-bg); }
-    #viewport.panning { cursor: grabbing !important; }
-    #wall { position: absolute; top: 0; left: 0; width: 10000px; height: 10000px; transform-origin: 0 0; }
-    .bg-grid { background-image: radial-gradient(rgba(0,0,0,0.1) 1.5px, transparent 1.5px); background-size: 30px 30px; }
-    body.dark-mode .bg-grid { background-image: radial-gradient(rgba(255,255,255,0.1) 1.5px, transparent 1.5px); }
+    /* --- WALL & STICKY NOTES --- */
+    #wall {
+      position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+      transform-origin: 0 0; /* Rất quan trọng để tính toán tọa độ Zoom */
+      will-change: transform;
+    }
 
-    /* --- STICKY NOTES --- */
     .note {
-      position: absolute; width: 280px; min-height: 250px; padding: 15px 15px 45px 15px;
-      border-radius: 2px; box-shadow: var(--shadow); display: flex; flex-direction: column;
-      cursor: grab; user-select: none; 
-      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
-      transform: rotate(var(--angle, 0deg)); /* Tilting effect */
+      position: absolute; width: 250px; min-height: 220px; padding: 15px;
+      border-radius: 8px; box-shadow: var(--shadow); display: flex; flex-direction: column;
+      cursor: grab; user-select: none; transition: box-shadow 0.2s, transform 0.1s;
     }
-    .note:hover, .note:active, .note.dragging {
-      transform: rotate(0deg) scale(1.05); /* Straighten on interaction */
-      box-shadow: 0 15px 20px rgba(0,0,0,0.2); z-index: 100 !important;
+    .note:active { cursor: grabbing; z-index: 99 !important; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+    
+    .note-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; color: #333;}
+    .note-content { flex-grow: 1; white-space: pre-wrap; font-size: 0.95rem; line-height: 1.4; color: #222;}
+    .note-footer { margin-top: 10px; text-align: right; font-size: 0.8rem; font-style: italic; color: rgba(0,0,0,0.6); }
+    .btn-delete { background: transparent; color: rgba(0,0,0,0.5); font-size: 1.1rem; }
+    .btn-delete:hover { color: red; }
+
+    /* --- MODAL ADD NOTE --- */
+    #modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); z-index: 2000;
+      display: none; justify-content: center; align-items: center;
     }
-    .note.pinned { cursor: default; }
-    .note.pinned:active { transform: rotate(var(--angle, 0deg)) scale(1); }
-    
-    .note-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; color:#222;}
-    .note-content { flex-grow: 1; font-size: 0.95rem; line-height: 1.4; color: #222; word-wrap: break-word; overflow: hidden; }
-    
-    /* Markdown Styles in Note */
-    .note-content img { max-width: 100%; border-radius: 4px; margin-top: 5px; }
-    .note-content ul, .note-content ol { padding-left: 20px; }
-    .hashtag { color: #2b6cb0; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .hashtag:hover { text-decoration: underline; background: rgba(255,255,255,0.5); border-radius: 3px; }
-    
-    /* Reactions Footer */
-    .note-footer { position: absolute; bottom: 10px; left: 15px; right: 15px; display: flex; justify-content: space-between; align-items: center; }
-    .reactions { display: flex; gap: 5px; }
-    .reaction-btn { background: rgba(255,255,255,0.5); border: none; border-radius: 12px; padding: 2px 8px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 3px; }
-    .reaction-btn:hover { background: rgba(255,255,255,0.9); }
-    
-    /* Actions */
-    .note-actions { display: flex; gap: 5px; }
-    .btn-action { background: transparent; color: rgba(0,0,0,0.5); border: none; font-size: 1rem; cursor: pointer; }
-    .btn-action:hover { color: #333; }
-    .btn-action.delete:hover { color: red; }
-    .btn-action.pinned { color: #e53e3e; }
-
-    /* --- LIVE CURSORS --- */
-    .live-cursor { position: absolute; pointer-events: none; z-index: 999; display: flex; flex-direction: column; align-items: flex-start; transition: transform 0.5s linear; }
-    .cursor-icon { font-size: 18px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3)); transform: rotate(-20deg); }
-    .cursor-name { background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; margin-top: -5px; margin-left: 10px; white-space: nowrap; }
-
-    /* --- MODALS --- */
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: none; justify-content: center; align-items: center; }
-    .modal { background: var(--header-bg); width: 90%; max-width: 450px; padding: 25px; border-radius: 12px; box-shadow: var(--shadow); }
+    .modal {
+      background: var(--header-bg); width: 90%; max-width: 400px;
+      padding: 25px; border-radius: 12px; box-shadow: var(--shadow);
+    }
+    .modal h2 { margin-bottom: 20px; text-align: center; }
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-    .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; background: transparent; color: var(--text-color); }
+    .form-group input[type="text"], .form-group textarea {
+      width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;
+      background: transparent; color: var(--text-color); resize: none;
+    }
     .color-picker { display: flex; gap: 10px; margin-top: 5px; }
-    .color-option { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+    .color-option {
+      width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+      border: 2px solid transparent; transition: 0.2s;
+    }
     .color-option.selected { border-color: #333; transform: scale(1.1); }
     body.dark-mode .color-option.selected { border-color: #fff; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-    .btn-save { padding: 10px 20px; border-radius: 6px; background: #48bb78; color: white; border:none; font-weight: bold; cursor: pointer;}
-    .hidden { display: none !important; }
     
-    /* Tutorial Overlay */
-    #tutorial { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; z-index: 1500; font-size: 0.9rem; pointer-events: none; opacity: 0.8; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .btn-cancel { padding: 10px 15px; border-radius: 6px; background: #e2e8f0; color: #333; }
+    .btn-save { padding: 10px 20px; border-radius: 6px; background: #48bb78; color: white; font-weight: bold; }
+    .btn-save:hover { background: #38a169; }
+    
+    .hidden { display: none !important; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .logo span { display: none; }
+      .btn-add span { display: none; }
+      .search-bar { max-width: 180px; }
+      #zoomOutBtn, #zoomResetBtn, #zoomInBtn { display: none; /* Ẩn nút zoom trên mobile vì đã có Pinch to Zoom */ }
+    }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="logo"><i class="fas fa-layer-group" style="color:#ecc94b;"></i> <span>TeamBoard</span></div>
+  <header id="app-header">
+    <div class="logo"><i class="fas fa-sticky-note" style="color:#ecc94b;"></i> <span>Note Wall</span></div>
+    
     <div class="search-bar">
       <i class="fas fa-search"></i>
-      <input type="text" id="searchInput" placeholder="Lọc theo #tag hoặc nội dung...">
+      <input type="text" id="searchInput" placeholder="Tìm theo tên hoặc nội dung...">
     </div>
+
     <div class="actions">
-      <button class="btn-icon" id="exportBtn" title="Lưu thành ảnh"><i class="fas fa-camera"></i></button>
-      <button class="btn-icon" id="themeToggle" title="Chế độ tối"><i class="fas fa-moon"></i></button>
-      <button class="btn-add" id="openModalBtn"><i class="fas fa-plus"></i> <span>Thêm Ghi Chú</span></button>
+      <!-- Các nút điều khiển Zoom -->
+      <button class="btn-icon" id="zoomOutBtn" title="Thu nhỏ"><i class="fas fa-search-minus"></i></button>
+      <button class="btn-icon" id="zoomResetBtn" title="Đặt lại Mặc định"><i class="fas fa-compress"></i></button>
+      <button class="btn-icon" id="zoomInBtn" title="Phóng to"><i class="fas fa-search-plus"></i></button>
+
+      <button class="btn-icon" id="themeToggle" title="Đổi giao diện"><i class="fas fa-moon"></i></button>
+      <button class="btn-add" id="openModalBtn"><i class="fas fa-plus"></i> <span>Tạo Ghi Chú</span></button>
     </div>
   </header>
 
-  <div id="tutorial"><i class="fas fa-info-circle"></i> Giữ phím <b>Space + Kéo chuột</b> để di chuyển tường | <b>Cuộn chuột</b> để Zoom</div>
+  <!-- Container của Bức Tường -->
+  <div id="wall"></div>
 
-  <div id="viewport">
-    <div id="wall" class="bg-grid">
-      <!-- Notes & Cursors sẽ render vào đây -->
-    </div>
-  </div>
-
-  <!-- Modal Đăng nhập / Nhập tên -->
-  <div class="modal-overlay" id="authModal" style="display: flex;">
-    <div class="modal">
-      <h2 style="text-align:center; margin-bottom: 20px;">Vào Không Gian Làm Việc</h2>
-      <div class="form-group">
-        <label>Tên hiển thị của bạn</label>
-        <input type="text" id="displayNameInput" placeholder="Nhập tên để mọi người nhận ra bạn..." required>
-      </div>
-      <button class="btn-save" style="width: 100%" id="enterBoardBtn">Tham gia ngay</button>
-    </div>
-  </div>
-
-  <!-- Modal Tạo Ghi Chú -->
-  <div class="modal-overlay" id="noteModal">
+  <!-- Modal -->
+  <div id="modal-overlay">
     <div class="modal">
       <h2>Tạo ghi chú mới</h2>
       <div class="form-group">
-        <label>Nội dung (Hỗ trợ Markdown & #hashtag)</label>
-        <textarea id="contentInput" rows="5" placeholder="**In đậm**, *In nghiêng*\n#quan_trong\n![ảnh](url)" required></textarea>
+        <label>Tên của bạn *</label>
+        <input type="text" id="authorInput" placeholder="VD: Tuấn Nguyễn" required>
+      </div>
+      <div class="form-group">
+        <label>Nội dung *</label>
+        <textarea id="contentInput" rows="4" placeholder="Nhập nội dung ghi chú..." required></textarea>
       </div>
       <div class="form-group">
         <label>Màu sắc</label>
-        <div class="color-picker">
+        <div class="color-picker" id="colorPicker">
           <div class="color-option selected" data-color="#fef3c7" style="background-color: #fef3c7;"></div>
           <div class="color-option" data-color="#fce7f3" style="background-color: #fce7f3;"></div>
           <div class="color-option" data-color="#e0e7ff" style="background-color: #e0e7ff;"></div>
@@ -168,7 +179,7 @@
         </div>
       </div>
       <div class="modal-actions">
-        <button class="btn-icon" style="border-radius:6px; width:auto; padding:0 15px;" id="closeModalBtn">Hủy</button>
+        <button class="btn-cancel" id="closeModalBtn">Hủy</button>
         <button class="btn-save" id="saveNoteBtn">Dán lên tường</button>
       </div>
     </div>
@@ -177,8 +188,10 @@
   <!-- FIREBASE SCRIPTS -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-analytics.js";
+    import { 
+      getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc 
+    } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAZiGa7KakG43YbCuYw1VYBwNdGgivVZtU",
@@ -186,312 +199,321 @@
       projectId: "buctuongghichu",
       storageBucket: "buctuongghichu.firebasestorage.app",
       messagingSenderId: "542301209901",
-      appId: "1:542301209901:web:f142e4a549e50ede0d7fa4"
+      appId: "1:542301209901:web:f142e4a549e50ede0d7fa4",
+      measurementId: "G-V7NQZK0T1H"
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    const analytics = getAnalytics(app);
     const db = getFirestore(app);
-    
-    // Collections
-    const notesColl = collection(db, "notes");
-    const cursorsColl = collection(db, "cursors");
+    const notesCollection = collection(db, "notes");
 
-    // Global State
-    let currentUser = null;
-    let userName = "";
-    let userColor = ['#e53e3e', '#3182ce', '#38a169', '#d69e2e', '#805ad5'][Math.floor(Math.random()*5)];
-    
-    // Pan & Zoom State
-    const viewport = document.getElementById('viewport');
+    /* ==============================
+       LOGIC PAN & ZOOM (TÍNH NĂNG MỚI)
+    ============================== */
     const wall = document.getElementById('wall');
     let scale = 1;
-    let panX = -3500; // Đặt vị trí view ban đầu ở giữa bức tường 10,000px
-    let panY = -3500;
-    
-    function updateTransform() {
+    let panX = 0;
+    let panY = 0;
+
+    function applyTransform() {
       wall.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
     }
-    updateTransform();
 
-    /* =========================================
-       1. FIREBASE AUTH & USER IDENTITY
-    ========================================= */
-    const authModal = document.getElementById('authModal');
-    document.getElementById('enterBoardBtn').addEventListener('click', () => {
-      const name = document.getElementById('displayNameInput').value.trim();
-      if(name) {
-        userName = name;
-        signInAnonymously(auth).catch(err => alert("Lỗi kết nối: " + err.message));
-      } else {
-        alert("Vui lòng nhập tên của bạn!");
-      }
-    });
+    // Giao diện Nút bấm Zoom
+    document.getElementById('zoomInBtn').addEventListener('click', () => { setZoom(scale * 1.2, window.innerWidth/2, window.innerHeight/2); });
+    document.getElementById('zoomOutBtn').addEventListener('click', () => { setZoom(scale / 1.2, window.innerWidth/2, window.innerHeight/2); });
+    document.getElementById('zoomResetBtn').addEventListener('click', () => { scale = 1; panX = 0; panY = 0; applyTransform(); });
 
-    onAuthStateChanged(auth, (user) => {
-      if (user && userName) {
-        currentUser = user;
-        authModal.style.display = 'none';
-        startRealtimeListeners();
-      }
-    });
+    function setZoom(newScale, centerX, centerY) {
+      const minScale = 0.3;
+      const maxScale = 3;
+      const clampedScale = Math.min(Math.max(minScale, newScale), maxScale);
+      
+      // Tính toán để điểm Zoom hướng về vị trí con trỏ / trung tâm màn hình
+      const xs = (centerX - panX) / scale;
+      const ys = (centerY - panY) / scale;
+      
+      scale = clampedScale;
+      panX = centerX - xs * scale;
+      panY = centerY - ys * scale;
+      applyTransform();
+    }
 
-    /* =========================================
-       2. PAN, ZOOM & INFINITE CANVAS
-    ========================================= */
-    let isPanning = false;
-    let startPanX = 0, startPanY = 0;
-    let isSpacePressed = false;
-
-    window.addEventListener('keydown', (e) => { if(e.code === 'Space' && document.activeElement.tagName !== 'TEXTAREA' && document.activeElement.tagName !== 'INPUT') { isSpacePressed = true; viewport.classList.add('panning'); e.preventDefault(); }});
-    window.addEventListener('keyup', (e) => { if(e.code === 'Space') { isSpacePressed = false; viewport.classList.remove('panning'); }});
-
-    viewport.addEventListener('mousedown', (e) => {
-      if (isSpacePressed || e.button === 1 || e.target === viewport || e.target === wall) {
-        isPanning = true; startPanX = e.clientX - panX; startPanY = e.clientY - panY;
-      }
-    });
-    
-    window.addEventListener('mousemove', (e) => {
-      if (isPanning) { panX = e.clientX - startPanX; panY = e.clientY - startPanY; updateTransform(); }
-    });
-    
-    window.addEventListener('mouseup', () => { isPanning = false; });
-
-    viewport.addEventListener('wheel', (e) => {
+    // 1. Zoom bằng con lăn chuột (Desktop)
+    window.addEventListener('wheel', (e) => {
+      // Bỏ qua nếu đang cuộn trong modal hoặc tìm kiếm
+      if (e.target.closest('#modal-overlay') || e.target.closest('#app-header')) return;
       e.preventDefault();
-      // Zoom
-      if (e.ctrlKey || e.metaKey || isSpacePressed) {
-        const zoomSensitivity = 0.001;
-        const delta = -e.deltaY * zoomSensitivity;
-        let newScale = scale * Math.exp(delta);
-        newScale = Math.min(Math.max(0.3, newScale), 3); // Limit scale 0.3x to 3x
-        
-        // Zoom toward mouse pointer
-        const rect = viewport.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        
-        panX = mouseX - (mouseX - panX) * (newScale / scale);
-        panY = mouseY - (mouseY - panY) * (newScale / scale);
-        scale = newScale;
+      
+      if (e.deltaY < 0) {
+        setZoom(scale * 1.1, e.clientX, e.clientY); // Phóng to
       } else {
-        // Trackpad panning
-        panX -= e.deltaX;
-        panY -= e.deltaY;
+        setZoom(scale / 1.1, e.clientX, e.clientY); // Thu nhỏ
       }
-      updateTransform();
     }, { passive: false });
 
-    /* =========================================
-       3. LIVE CURSORS
-    ========================================= */
-    let lastCursorUpdate = 0;
+    // 2. Pan (Kéo thả vùng trống) & Pinch to Zoom (Điện thoại)
+    let isPanningSpace = false;
+    let startPanX, startPanY;
+    let initialPinchDist = null;
+    let initialScale = 1;
+
+    document.body.addEventListener('mousedown', (e) => {
+      // Nếu click vào ghi chú, modal hoặc header thì bỏ qua để nhường cho hàm khác
+      if (e.target.closest('.note') || e.target.closest('#modal-overlay') || e.target.closest('#app-header')) return;
+      isPanningSpace = true;
+      startPanX = e.clientX - panX;
+      startPanY = e.clientY - panY;
+      document.body.style.cursor = 'grabbing';
+    });
+
     window.addEventListener('mousemove', (e) => {
-      if(!currentUser) return;
-      const now = Date.now();
-      // Throttle upload 500ms to save Firestore quota
-      if (now - lastCursorUpdate > 500) {
-        // Calculate coordinates relative to the wall
-        const rect = viewport.getBoundingClientRect();
-        const wallX = (e.clientX - rect.left - panX) / scale;
-        const wallY = (e.clientY - rect.top - panY) / scale;
+      if (!isPanningSpace) return;
+      panX = e.clientX - startPanX;
+      panY = e.clientY - startPanY;
+      applyTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isPanningSpace = false;
+      document.body.style.cursor = 'default';
+    });
+
+    // Touch Event (Mobile)
+    document.body.addEventListener('touchstart', (e) => {
+      if (e.target.closest('#modal-overlay') || e.target.closest('#app-header')) return;
+      
+      if (e.touches.length === 1 && !e.target.closest('.note')) {
+        // Kéo bằng 1 ngón tay trên nền trống
+        isPanningSpace = true;
+        startPanX = e.touches[0].clientX - panX;
+        startPanY = e.touches[0].clientY - panY;
+      } 
+      else if (e.touches.length === 2) {
+        // Thu phóng bằng 2 ngón tay
+        isPanningSpace = false;
+        initialPinchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialScale = scale;
         
-        setDoc(doc(db, "cursors", currentUser.uid), {
-          x: wallX, y: wallY, name: userName, color: userColor, timestamp: now
-        }, { merge: true });
-        lastCursorUpdate = now;
+        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        startPanX = (centerX - panX) / scale;
+        startPanY = (centerY - panY) / scale;
       }
-    });
+    }, { passive: false });
 
-    onSnapshot(cursorsColl, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        const data = change.doc.data();
-        if (change.doc.id === currentUser?.uid) return; // Ignore own cursor
+    document.body.addEventListener('touchmove', (e) => {
+      if (e.target.closest('#modal-overlay') || e.target.closest('#app-header')) return;
+      
+      if (isPanningSpace && e.touches.length === 1) {
+        e.preventDefault();
+        panX = e.touches[0].clientX - startPanX;
+        panY = e.touches[0].clientY - startPanY;
+        applyTransform();
+      } 
+      else if (e.touches.length === 2 && initialPinchDist) {
+        e.preventDefault();
+        const currentDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
         
-        // Remove dead cursors (> 15 seconds old)
-        if (Date.now() - data.timestamp > 15000) {
-          const el = document.getElementById(`cursor-${change.doc.id}`);
-          if (el) el.remove();
-          return;
-        }
+        scale = initialScale * (currentDist / initialPinchDist);
+        scale = Math.min(Math.max(0.3, scale), 3);
+        
+        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        
+        panX = centerX - startPanX * scale;
+        panY = centerY - startPanY * scale;
+        applyTransform();
+      }
+    }, { passive: false });
 
-        let cursorEl = document.getElementById(`cursor-${change.doc.id}`);
-        if (!cursorEl) {
-          cursorEl = document.createElement('div');
-          cursorEl.id = `cursor-${change.doc.id}`;
-          cursorEl.className = 'live-cursor';
-          cursorEl.innerHTML = `
-            <i class="fas fa-mouse-pointer cursor-icon" style="color: ${data.color}"></i>
-            <div class="cursor-name" style="background: ${data.color}">${data.name}</div>
-          `;
-          wall.appendChild(cursorEl);
-        }
-        cursorEl.style.transform = `translate(${data.x}px, ${data.y}px)`;
-      });
+    document.body.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) initialPinchDist = null;
+      if (e.touches.length === 0) isPanningSpace = false;
     });
 
-    /* =========================================
-       4. GHI CHÚ (CRUD, MARKDOWN, TƯƠNG TÁC)
-    ========================================= */
+    /* ==============================
+       LOGIC GIAO DIỆN & SỰ KIỆN CŨ
+    ============================== */
+    const searchInput = document.getElementById('searchInput');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const openModalBtn = document.getElementById('openModalBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const saveNoteBtn = document.getElementById('saveNoteBtn');
+    const themeToggle = document.getElementById('themeToggle');
+    
+    // Xử lý Dark / Light Mode
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.body.classList.add('dark-mode');
+      themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+    }
+
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    });
+
+    // Xử lý Chọn Màu
     let selectedColor = '#fef3c7';
-    document.querySelectorAll('.color-option').forEach(el => {
-      el.addEventListener('click', (e) => {
-        document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+    document.querySelectorAll('.color-option').forEach(option => {
+      option.addEventListener('click', (e) => {
+        document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
         e.target.classList.add('selected');
         selectedColor = e.target.getAttribute('data-color');
       });
     });
 
-    document.getElementById('openModalBtn').addEventListener('click', () => document.getElementById('noteModal').style.display = 'flex');
-    document.getElementById('closeModalBtn').addEventListener('click', () => document.getElementById('noteModal').style.display = 'none');
+    // Mở / Đóng Modal
+    openModalBtn.addEventListener('click', () => modalOverlay.style.display = 'flex');
+    closeModalBtn.addEventListener('click', () => modalOverlay.style.display = 'none');
 
-    document.getElementById('saveNoteBtn').addEventListener('click', async () => {
+    // Thêm Ghi Chú mới
+    saveNoteBtn.addEventListener('click', async () => {
+      const author = document.getElementById('authorInput').value.trim();
       const content = document.getElementById('contentInput').value.trim();
-      if (!content) return alert("Nội dung không được để trống!");
+
+      if (!author || !content) {
+        alert("Vui lòng nhập đầy đủ tên và nội dung!");
+        return;
+      }
+
+      const randomOffset = Math.floor(Math.random() * 50) - 25;
       
-      // Calculate center of current view to place note
-      const rect = viewport.getBoundingClientRect();
-      const centerX = (rect.width / 2 - panX) / scale - 140; 
-      const centerY = (rect.height / 2 - panY) / scale - 125;
-      const angle = Math.floor(Math.random() * 7) - 3; // -3 to 3 degree tilt
+      // Tính toán tạo Ghi chú luôn xuất hiện ở ngay chính giữa màn hình hiện tại (kể cả khi đã Zoom hoặc Pan)
+      const x = (window.innerWidth / 2 - panX) / scale - 125 + randomOffset; 
+      const y = (window.innerHeight / 2 - panY) / scale - 110 + randomOffset;
 
       const newNote = {
-        uid: currentUser.uid, author: userName, content: content, color: selectedColor,
-        x: centerX, y: centerY, angle: angle, isPinned: false,
-        reactions: { heart: 0, like: 0, fire: 0 },
-        createdAt: Date.now()
+        author,
+        content,
+        color: selectedColor,
+        x: x,
+        y: y,
+        createdAt: new Date().toISOString()
       };
 
-      await addDoc(notesColl, newNote);
-      document.getElementById('contentInput').value = '';
-      document.getElementById('noteModal').style.display = 'none';
+      try {
+        saveNoteBtn.disabled = true;
+        saveNoteBtn.innerText = "Đang lưu...";
+        await addDoc(notesCollection, newNote);
+        
+        document.getElementById('authorInput').value = '';
+        document.getElementById('contentInput').value = '';
+        modalOverlay.style.display = 'none';
+      } catch (error) {
+        console.error("Lỗi khi thêm ghi chú: ", error);
+        alert("Lỗi mạng! Không thể lưu ghi chú.");
+      } finally {
+        saveNoteBtn.disabled = false;
+        saveNoteBtn.innerText = "Dán lên tường";
+      }
     });
 
-    function startRealtimeListeners() {
-      onSnapshot(notesColl, (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          const id = change.doc.id;
-          const data = change.doc.data();
-          if (change.type === "added") renderNote(id, data);
-          if (change.type === "modified") updateNoteDOM(id, data);
-          if (change.type === "removed") { const el = document.getElementById(id); if (el) el.remove(); }
-        });
+    // Tìm kiếm ghi chú
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      document.querySelectorAll('.note').forEach(note => {
+        const author = note.querySelector('.note-author').innerText.toLowerCase();
+        const content = note.querySelector('.note-content').innerText.toLowerCase();
+        if (author.includes(query) || content.includes(query)) {
+          note.classList.remove('hidden');
+        } else {
+          note.classList.add('hidden');
+        }
       });
-    }
+    });
 
-    // Markdown & XSS config
-    marked.setOptions({ breaks: true });
-    
-    function parseContent(text) {
-      // 1. Regex bọc #hashtag vào span
-      let html = text.replace(/#([\w_]+)/g, '<span class="hashtag" data-tag="$1">#$1</span>');
-      // 2. Parse Markdown
-      html = marked.parse(html);
-      // 3. Purify XSS (cho phép span class hashtag)
-      return DOMPurify.sanitize(html, { ADD_ATTR: ['data-tag'] });
-    }
+    /* ==============================
+       LOGIC REALTIME FIREBASE & KÉO THẢ CẬP NHẬT THEO SCALE
+    ============================== */
+    onSnapshot(notesCollection, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          renderNoteToWall(change.doc.id, change.doc.data());
+        }
+        if (change.type === "modified") {
+          updateNoteInDOM(change.doc.id, change.doc.data());
+        }
+        if (change.type === "removed") {
+          const noteEl = document.getElementById(change.doc.id);
+          if (noteEl) noteEl.remove();
+        }
+      });
+    });
 
-    function renderNote(id, data) {
+    function renderNoteToWall(id, data) {
       const note = document.createElement('div');
-      note.className = 'note'; note.id = id;
+      note.className = 'note';
+      note.id = id;
       note.style.backgroundColor = data.color;
-      note.style.setProperty('--angle', `${data.angle}deg`);
-      
-      const isOwner = currentUser.uid === data.uid;
-      
-      note.innerHTML = `
-        <div class="note-header">
-          <span><i class="fas fa-user-circle"></i> ${DOMPurify.sanitize(data.author)}</span>
-          <div class="note-actions">
-            ${isOwner ? `<button class="btn-action btn-pin ${data.isPinned ? 'pinned' : ''}" title="Khóa vị trí"><i class="fas ${data.isPinned ? 'fa-lock' : 'fa-thumbtack'}"></i></button>` : ''}
-            ${isOwner ? `<button class="btn-action delete" title="Xóa"><i class="fas fa-times"></i></button>` : ''}
-          </div>
-        </div>
-        <div class="note-content">${parseContent(data.content)}</div>
-        <div class="note-footer">
-          <div class="reactions">
-            <button class="reaction-btn" data-type="heart">❤️ <span>${data.reactions?.heart || 0}</span></button>
-            <button class="reaction-btn" data-type="like">👍 <span>${data.reactions?.like || 0}</span></button>
-            <button class="reaction-btn" data-type="fire">🔥 <span>${data.reactions?.fire || 0}</span></button>
-          </div>
-        </div>
-      `;
-      
-      updateNoteDOM(id, data, note); // Set position & Pin state
-      
-      // Events
-      if(isOwner) {
-        note.querySelector('.delete')?.addEventListener('click', () => { if(confirm("Xóa ghi chú?")) deleteDoc(doc(db, "notes", id)); });
-        note.querySelector('.btn-pin')?.addEventListener('click', () => updateDoc(doc(db, "notes", id), { isPinned: !data.isPinned }));
-      }
-      
-      // Reactions Event
-      note.querySelectorAll('.reaction-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const type = btn.getAttribute('data-type');
-          updateDoc(doc(db, "notes", id), { [`reactions.${type}`]: (data.reactions[type] || 0) + 1 });
-        });
-      });
-
-      // Hashtag click filter
-      note.querySelectorAll('.hashtag').forEach(tag => {
-        tag.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const tagWord = "#" + tag.getAttribute('data-tag');
-          document.getElementById('searchInput').value = tagWord;
-          document.getElementById('searchInput').dispatchEvent(new Event('input'));
-        });
-      });
-
-      makeDraggable(note, id, data);
-      wall.appendChild(note);
-    }
-
-    function updateNoteDOM(id, data, existingNote = null) {
-      const note = existingNote || document.getElementById(id);
-      if (!note) return;
-      
       note.style.left = `${data.x}px`;
       note.style.top = `${data.y}px`;
-      if(data.isPinned) note.classList.add('pinned'); else note.classList.remove('pinned');
-      
-      if(!existingNote) {
-        note.querySelector('.note-content').innerHTML = parseContent(data.content);
-        note.style.backgroundColor = data.color;
-        
-        // Update reaction counts
-        note.querySelector('[data-type="heart"] span').innerText = data.reactions?.heart || 0;
-        note.querySelector('[data-type="like"] span').innerText = data.reactions?.like || 0;
-        note.querySelector('[data-type="fire"] span').innerText = data.reactions?.fire || 0;
-        
-        // Update Pin icon
-        const pinBtn = note.querySelector('.btn-pin');
-        if(pinBtn) {
-           pinBtn.className = `btn-action btn-pin ${data.isPinned ? 'pinned' : ''}`;
-           pinBtn.innerHTML = `<i class="fas ${data.isPinned ? 'fa-lock' : 'fa-thumbtack'}"></i>`;
+
+      note.innerHTML = `
+        <div class="note-header">
+          <span class="note-author"><i class="fas fa-user-circle"></i> ${escapeHTML(data.author)}</span>
+          <button class="btn-delete" title="Xóa ghi chú"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="note-content">${escapeHTML(data.content)}</div>
+      `;
+
+      note.querySelector('.btn-delete').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if(confirm("Bạn có chắc chắn muốn gỡ ghi chú này xuống không?")) {
+          await deleteDoc(doc(db, "notes", id));
         }
+      });
+
+      makeDraggable(note, id);
+      wall.appendChild(note);
+
+      const query = searchInput.value.toLowerCase();
+      if(query && !(data.author.toLowerCase().includes(query) || data.content.toLowerCase().includes(query))) {
+        note.classList.add('hidden');
       }
     }
 
-    /* =========================================
-       5. KÉO THẢ TƯƠNG TÍCH SCALE (DRAG & DROP)
-    ========================================= */
-    let maxZ = 100;
-    function makeDraggable(element, id, noteData) {
-      let isDragging = false, startX, startY, initialX, initialY;
+    function updateNoteInDOM(id, data) {
+      const note = document.getElementById(id);
+      if (note) {
+        note.style.left = `${data.x}px`;
+        note.style.top = `${data.y}px`;
+        note.style.backgroundColor = data.color;
+        note.querySelector('.note-author').innerHTML = `<i class="fas fa-user-circle"></i> ${escapeHTML(data.author)}`;
+        note.querySelector('.note-content').innerText = data.content;
+      }
+    }
+
+    let maxZIndex = 1;
+    function makeDraggable(element, id) {
+      let isDragging = false;
+      let startX, startY, initialX, initialY;
 
       const dragStart = (e) => {
-        if (element.classList.contains('pinned') || e.target.closest('button') || e.target.closest('.hashtag')) return;
+        if (e.target.tagName.toLowerCase() === 'button' || e.target.tagName.toLowerCase() === 'i') return;
+        
         isDragging = true;
-        maxZ++; element.style.zIndex = maxZ;
-        element.classList.add('dragging');
-        
-        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-        
-        startX = clientX; startY = clientY;
+        maxZIndex++;
+        element.style.zIndex = maxZIndex;
+
+        if (e.type === 'touchstart') {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        } else {
+          startX = e.clientX;
+          startY = e.clientY;
+        }
+
         initialX = parseFloat(element.style.left || 0);
         initialY = parseFloat(element.style.top || 0);
 
@@ -503,89 +525,51 @@
 
       const dragAction = (e) => {
         if (!isDragging) return;
-        e.preventDefault();
-        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-        
-        // Cần chia cho "scale" để quãng đường chuột đi khớp với quãng đường trên wall đã bị zoom
-        const dx = (clientX - startX) / scale;
-        const dy = (clientY - startY) / scale;
-        
-        element.style.left = `${initialX + dx}px`;
-        element.style.top = `${initialY + dy}px`;
+        e.preventDefault(); 
+
+        let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+        // Cập nhật quan trọng: Chia độ dời cho tỷ lệ Zoom (scale)
+        let dx = (currentX - startX) / scale;
+        let dy = (currentY - startY) / scale;
+
+        let newLeft = initialX + dx;
+        let newTop = initialY + dy;
+
+        element.style.left = `${newLeft}px`;
+        element.style.top = `${newTop}px`;
       };
 
-      const dragEnd = () => {
+      const dragEnd = async (e) => {
         if (!isDragging) return;
         isDragging = false;
-        element.classList.remove('dragging');
+
         document.removeEventListener('mousemove', dragAction);
         document.removeEventListener('touchmove', dragAction);
         document.removeEventListener('mouseup', dragEnd);
         document.removeEventListener('touchend', dragEnd);
 
-        updateDoc(doc(db, "notes", id), {
-          x: parseFloat(element.style.left), y: parseFloat(element.style.top)
-        });
+        try {
+          const noteRef = doc(db, "notes", id);
+          await updateDoc(noteRef, {
+            x: parseFloat(element.style.left),
+            y: parseFloat(element.style.top)
+          });
+        } catch (error) {
+          console.error("Lỗi cập nhật vị trí: ", error);
+        }
       };
 
       element.addEventListener('mousedown', dragStart);
       element.addEventListener('touchstart', dragStart, { passive: false });
     }
 
-    /* =========================================
-       6. CÁC TIỆN ÍCH (TÌM KIẾM, THEME, EXPORT)
-    ========================================= */
-    
-    // Tìm kiếm / Lọc Hashtag
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-      const q = e.target.value.toLowerCase();
-      document.querySelectorAll('.note').forEach(note => {
-        const text = note.innerText.toLowerCase();
-        note.style.display = text.includes(q) ? 'flex' : 'none';
-      });
-    });
-
-    // Dark Mode
-    const themeBtn = document.getElementById('themeToggle');
-    if(localStorage.getItem('theme') === 'dark') { document.body.classList.add('dark-mode'); themeBtn.innerHTML = '<i class="fas fa-sun"></i>'; }
-    themeBtn.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-      const isDark = document.body.classList.contains('dark-mode');
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      themeBtn.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-    });
-
-    // Xuất Ảnh bằng html2canvas
-    document.getElementById('exportBtn').addEventListener('click', async () => {
-      const btn = document.getElementById('exportBtn');
-      const oldIcon = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      
-      try {
-        // Tạm thời ẩn grid nền để ảnh xuất ra sạch sẽ hơn
-        wall.classList.remove('bg-grid');
-        
-        // Vì wall là 10,000px, chúng ta chỉ chụp Viewport hiển thị trên màn hình hiện tại
-        const canvas = await html2canvas(viewport, {
-          backgroundColor: document.body.classList.contains('dark-mode') ? '#2d3748' : '#e2e8f0',
-          useCORS: true,
-          scale: 2 // Xuất ảnh độ phân giải cao
-        });
-        
-        wall.classList.add('bg-grid');
-        
-        const link = document.createElement('a');
-        link.download = `TeamBoard_${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      } catch (err) {
-        alert("Lỗi xuất ảnh: " + err.message);
-      } finally {
-        btn.innerHTML = oldIcon;
-      }
-    });
-
+    function escapeHTML(str) {
+      const div = document.createElement('div');
+      div.innerText = str;
+      return div.innerHTML;
+    }
   </script>
 </body>
 </html>
