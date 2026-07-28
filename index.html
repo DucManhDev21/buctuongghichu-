@@ -1,575 +1,703 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="dark h-full">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Bức tường Ghi chú Tương tác</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <style>
-    /* --- CSS BIẾN & CƠ BẢN --- */
-    :root {
-      --bg-color: #f4f7f6;
-      --wall-bg: #e2e8f0;
-      --text-color: #333;
-      --header-bg: #ffffff;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Vibe - Portfolio Creator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,400&family=Fira+Code&display=swap" rel="stylesheet">
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
-    body.dark-mode {
-      --bg-color: #1a202c;
-      --wall-bg: #2d3748;
-      --text-color: #f7fafc;
-      --header-bg: #1a202c;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-
-    /* Cập nhật body: Chặn native pull-to-refresh trên mobile và lấy màu nền của wall */
-    body { 
-        background-color: var(--wall-bg); 
-        color: var(--text-color); 
-        overflow: hidden; 
-        transition: background-color 0.3s; 
-        touch-action: none; 
-        user-select: none;
-    }
-
-    /* --- HEADER --- */
-    header {
-      position: fixed; top: 0; left: 0; width: 100%; height: 70px;
-      background: var(--header-bg); box-shadow: var(--shadow);
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 0 20px; z-index: 1000; transition: background 0.3s;
-    }
-
-    .logo { font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; gap: 10px; }
-    
-    .search-bar {
-      flex-grow: 1; max-width: 350px; margin: 0 20px; position: relative;
-    }
-    
-    .search-bar input {
-      width: 100%; padding: 10px 15px 10px 40px; border-radius: 20px;
-      border: 1px solid #ccc; outline: none; background: transparent; color: var(--text-color);
-    }
-    
-    .search-bar i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; }
-
-    .actions { display: flex; gap: 10px; }
-    button { cursor: pointer; border: none; outline: none; transition: 0.2s; }
-    
-    .btn-icon {
-      width: 40px; height: 40px; border-radius: 50%; background: #edf2f7;
-      color: #333; display: flex; justify-content: center; align-items: center; font-size: 1.1rem;
-    }
-    body.dark-mode .btn-icon { background: #4a5568; color: #fff; }
-    .btn-icon:hover { transform: scale(1.1); }
-    
-    .btn-add {
-      background: #4299e1; color: white; padding: 0 20px; border-radius: 20px;
-      font-weight: bold; display: flex; align-items: center; gap: 8px;
-    }
-    .btn-add:hover { background: #3182ce; }
-
-    /* --- WALL & STICKY NOTES --- */
-    #wall {
-      position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-      transform-origin: 0 0; /* Rất quan trọng để tính toán tọa độ Zoom */
-      will-change: transform;
-    }
-
-    .note {
-      position: absolute; width: 250px; min-height: 220px; padding: 15px;
-      border-radius: 8px; box-shadow: var(--shadow); display: flex; flex-direction: column;
-      cursor: grab; user-select: none; transition: box-shadow 0.2s, transform 0.1s;
-    }
-    .note:active { cursor: grabbing; z-index: 99 !important; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-    
-    .note-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; color: #333;}
-    .note-content { flex-grow: 1; white-space: pre-wrap; font-size: 0.95rem; line-height: 1.4; color: #222;}
-    .note-footer { margin-top: 10px; text-align: right; font-size: 0.8rem; font-style: italic; color: rgba(0,0,0,0.6); }
-    .btn-delete { background: transparent; color: rgba(0,0,0,0.5); font-size: 1.1rem; }
-    .btn-delete:hover { color: red; }
-
-    /* --- MODAL ADD NOTE --- */
-    #modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5); z-index: 2000;
-      display: none; justify-content: center; align-items: center;
-    }
-    .modal {
-      background: var(--header-bg); width: 90%; max-width: 400px;
-      padding: 25px; border-radius: 12px; box-shadow: var(--shadow);
-    }
-    .modal h2 { margin-bottom: 20px; text-align: center; }
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-    .form-group input[type="text"], .form-group textarea {
-      width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;
-      background: transparent; color: var(--text-color); resize: none;
-    }
-    .color-picker { display: flex; gap: 10px; margin-top: 5px; }
-    .color-option {
-      width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
-      border: 2px solid transparent; transition: 0.2s;
-    }
-    .color-option.selected { border-color: #333; transform: scale(1.1); }
-    body.dark-mode .color-option.selected { border-color: #fff; }
-    
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-    .btn-cancel { padding: 10px 15px; border-radius: 6px; background: #e2e8f0; color: #333; }
-    .btn-save { padding: 10px 20px; border-radius: 6px; background: #48bb78; color: white; font-weight: bold; }
-    .btn-save:hover { background: #38a169; }
-    
-    .hidden { display: none !important; }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .logo span { display: none; }
-      .btn-add span { display: none; }
-      .search-bar { max-width: 180px; }
-      #zoomOutBtn, #zoomResetBtn, #zoomInBtn { display: none; /* Ẩn nút zoom trên mobile vì đã có Pinch to Zoom */ }
-    }
-  </style>
+    <style>
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #transition-circle {
+            position: fixed; top: 50%; left: 50%; width: 0px; height: 0px;
+            border-radius: 50%; background: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
+            transform: translate(-50%, -50%); z-index: 9999; pointer-events: none;
+        }
+        /* Hide scrollbar for cleaner UI but keep functionality */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 10px; }
+        
+        /* Cố định các section để làm SPA */
+        .spa-screen { display: none; opacity: 0; min-height: 100vh; width: 100%; flex-direction: column; }
+        #welcome-screen { display: flex; opacity: 1; }
+    </style>
 </head>
-<body>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-x-hidden relative">
 
-  <header id="app-header">
-    <div class="logo"><i class="fas fa-sticky-note" style="color:#ecc94b;"></i> <span>Note Wall</span></div>
-    
-    <div class="search-bar">
-      <i class="fas fa-search"></i>
-      <input type="text" id="searchInput" placeholder="Tìm theo tên hoặc nội dung...">
-    </div>
+    <div id="transition-circle"></div>
 
-    <div class="actions">
-      <!-- Các nút điều khiển Zoom -->
-      <button class="btn-icon" id="zoomOutBtn" title="Thu nhỏ"><i class="fas fa-search-minus"></i></button>
-      <button class="btn-icon" id="zoomResetBtn" title="Đặt lại Mặc định"><i class="fas fa-compress"></i></button>
-      <button class="btn-icon" id="zoomInBtn" title="Phóng to"><i class="fas fa-search-plus"></i></button>
+    <!-- GLOBAL NAVBAR & MENU -->
+    <nav class="fixed w-full z-50 glass-panel border-b-0 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="showScreen('welcome-screen')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                        <i class="fa-solid fa-cube text-white text-lg"></i>
+                    </div>
+                    <span class="text-xl font-bold tracking-wider bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-white dark:to-slate-400 bg-clip-text text-transparent hidden sm:block">NEXUS VIBE</span>
+                </div>
 
-      <button class="btn-icon" id="themeToggle" title="Đổi giao diện"><i class="fas fa-moon"></i></button>
-      <button class="btn-add" id="openModalBtn"><i class="fas fa-plus"></i> <span>Tạo Ghi Chú</span></button>
-    </div>
-  </header>
+                <!-- Right Menu -->
+                <div class="flex items-center space-x-3 sm:space-x-4">
+                    <button onclick="toggleTheme()" class="w-10 h-10 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition flex items-center justify-center">
+                        <i id="theme-icon" class="fa-solid fa-sun text-amber-500 dark:text-slate-300"></i>
+                    </button>
+                    
+                    <!-- Guest Menu -->
+                    <div id="nav-guest-menu" class="flex items-center space-x-3">
+                        <button onclick="startTransitionToAuth('login')" class="hidden sm:inline-block px-5 py-2 text-sm font-semibold rounded-full border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/10 transition">Đăng Nhập</button>
+                        <button onclick="startTransitionToAuth('register')" class="px-5 py-2 text-sm font-semibold rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:opacity-95 transition">Đăng Ký</button>
+                    </div>
 
-  <!-- Container của Bức Tường -->
-  <div id="wall"></div>
-
-  <!-- Modal -->
-  <div id="modal-overlay">
-    <div class="modal">
-      <h2>Tạo ghi chú mới</h2>
-      <div class="form-group">
-        <label>Tên của bạn *</label>
-        <input type="text" id="authorInput" placeholder="VD: Tuấn Nguyễn" required>
-      </div>
-      <div class="form-group">
-        <label>Nội dung *</label>
-        <textarea id="contentInput" rows="4" placeholder="Nhập nội dung ghi chú..." required></textarea>
-      </div>
-      <div class="form-group">
-        <label>Màu sắc</label>
-        <div class="color-picker" id="colorPicker">
-          <div class="color-option selected" data-color="#fef3c7" style="background-color: #fef3c7;"></div>
-          <div class="color-option" data-color="#fce7f3" style="background-color: #fce7f3;"></div>
-          <div class="color-option" data-color="#e0e7ff" style="background-color: #e0e7ff;"></div>
-          <div class="color-option" data-color="#d1fae5" style="background-color: #d1fae5;"></div>
+                    <!-- Logged In Menu -->
+                    <div id="nav-user-menu" class="hidden items-center space-x-4">
+                        <span id="user-email-display" class="text-sm text-slate-500 dark:text-slate-400 font-medium hidden md:block"></span>
+                        <button id="btn-logout" class="px-4 py-2 text-sm font-semibold rounded-full bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition">
+                            <i class="fa-solid fa-right-from-bracket mr-1"></i> Thoát
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-cancel" id="closeModalBtn">Hủy</button>
-        <button class="btn-save" id="saveNoteBtn">Dán lên tường</button>
-      </div>
-    </div>
-  </div>
+    </nav>
 
-  <!-- FIREBASE SCRIPTS -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-analytics.js";
-    import { 
-      getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc 
-    } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+    <!-- 1. MÀN HÌNH GIỚI THIỆU (WELCOME SCREEN) -->
+    <section id="welcome-screen" class="spa-screen pt-20 justify-center p-6 sm:p-12 relative overflow-hidden">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 dark:bg-indigo-600/30 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute top-1/2 -right-40 w-96 h-96 bg-purple-600/20 dark:bg-purple-600/30 rounded-full blur-3xl pointer-events-none"></div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAZiGa7KakG43YbCuYw1VYBwNdGgivVZtU",
-      authDomain: "buctuongghichu.firebaseapp.com",
-      projectId: "buctuongghichu",
-      storageBucket: "buctuongghichu.firebasestorage.app",
-      messagingSenderId: "542301209901",
-      appId: "1:542301209901:web:f142e4a549e50ede0d7fa4",
-      measurementId: "G-V7NQZK0T1H"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-    const db = getFirestore(app);
-    const notesCollection = collection(db, "notes");
-
-    /* ==============================
-       LOGIC PAN & ZOOM (TÍNH NĂNG MỚI)
-    ============================== */
-    const wall = document.getElementById('wall');
-    let scale = 1;
-    let panX = 0;
-    let panY = 0;
-
-    function applyTransform() {
-      wall.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
-    }
-
-    // Giao diện Nút bấm Zoom
-    document.getElementById('zoomInBtn').addEventListener('click', () => { setZoom(scale * 1.2, window.innerWidth/2, window.innerHeight/2); });
-    document.getElementById('zoomOutBtn').addEventListener('click', () => { setZoom(scale / 1.2, window.innerWidth/2, window.innerHeight/2); });
-    document.getElementById('zoomResetBtn').addEventListener('click', () => { scale = 1; panX = 0; panY = 0; applyTransform(); });
-
-    function setZoom(newScale, centerX, centerY) {
-      const minScale = 0.3;
-      const maxScale = 3;
-      const clampedScale = Math.min(Math.max(minScale, newScale), maxScale);
-      
-      // Tính toán để điểm Zoom hướng về vị trí con trỏ / trung tâm màn hình
-      const xs = (centerX - panX) / scale;
-      const ys = (centerY - panY) / scale;
-      
-      scale = clampedScale;
-      panX = centerX - xs * scale;
-      panY = centerY - ys * scale;
-      applyTransform();
-    }
-
-    // 1. Zoom bằng con lăn chuột (Desktop)
-    window.addEventListener('wheel', (e) => {
-      // Bỏ qua nếu đang cuộn trong modal hoặc tìm kiếm
-      if (e.target.closest('#modal-overlay') || e.target.closest('#app-header')) return;
-      e.preventDefault();
-      
-      if (e.deltaY < 0) {
-        setZoom(scale * 1.1, e.clientX, e.clientY); // Phóng to
-      } else {
-        setZoom(scale / 1.1, e.clientX, e.clientY); // Thu nhỏ
-      }
-    }, { passive: false });
-
-    // 2. Pan (Kéo thả vùng trống) & Pinch to Zoom (Điện thoại)
-    let isPanningSpace = false;
-    let startPanX, startPanY;
-    let initialPinchDist = null;
-    let initialScale = 1;
-
-    document.body.addEventListener('mousedown', (e) => {
-      // Nếu click vào ghi chú, modal hoặc header thì bỏ qua để nhường cho hàm khác
-      if (e.target.closest('.note') || e.target.closest('#modal-overlay') || e.target.closest('#app-header')) return;
-      isPanningSpace = true;
-      startPanX = e.clientX - panX;
-      startPanY = e.clientY - panY;
-      document.body.style.cursor = 'grabbing';
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if (!isPanningSpace) return;
-      panX = e.clientX - startPanX;
-      panY = e.clientY - startPanY;
-      applyTransform();
-    });
-
-    window.addEventListener('mouseup', () => {
-      isPanningSpace = false;
-      document.body.style.cursor = 'default';
-    });
-
-    // Touch Event (Mobile)
-    document.body.addEventListener('touchstart', (e) => {
-      if (e.target.closest('#modal-overlay') || e.target.closest('#app-header')) return;
-      
-      if (e.touches.length === 1 && !e.target.closest('.note')) {
-        // Kéo bằng 1 ngón tay trên nền trống
-        isPanningSpace = true;
-        startPanX = e.touches[0].clientX - panX;
-        startPanY = e.touches[0].clientY - panY;
-      } 
-      else if (e.touches.length === 2) {
-        // Thu phóng bằng 2 ngón tay
-        isPanningSpace = false;
-        initialPinchDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        initialScale = scale;
-        
-        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        startPanX = (centerX - panX) / scale;
-        startPanY = (centerY - panY) / scale;
-      }
-    }, { passive: false });
-
-    document.body.addEventListener('touchmove', (e) => {
-      if (e.target.closest('#modal-overlay') || e.target.closest('#app-header')) return;
-      
-      if (isPanningSpace && e.touches.length === 1) {
-        e.preventDefault();
-        panX = e.touches[0].clientX - startPanX;
-        panY = e.touches[0].clientY - startPanY;
-        applyTransform();
-      } 
-      else if (e.touches.length === 2 && initialPinchDist) {
-        e.preventDefault();
-        const currentDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        
-        scale = initialScale * (currentDist / initialPinchDist);
-        scale = Math.min(Math.max(0.3, scale), 3);
-        
-        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        
-        panX = centerX - startPanX * scale;
-        panY = centerY - startPanY * scale;
-        applyTransform();
-      }
-    }, { passive: false });
-
-    document.body.addEventListener('touchend', (e) => {
-      if (e.touches.length < 2) initialPinchDist = null;
-      if (e.touches.length === 0) isPanningSpace = false;
-    });
-
-    /* ==============================
-       LOGIC GIAO DIỆN & SỰ KIỆN CŨ
-    ============================== */
-    const searchInput = document.getElementById('searchInput');
-    const modalOverlay = document.getElementById('modal-overlay');
-    const openModalBtn = document.getElementById('openModalBtn');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const saveNoteBtn = document.getElementById('saveNoteBtn');
-    const themeToggle = document.getElementById('themeToggle');
-    
-    // Xử lý Dark / Light Mode
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-      document.body.classList.add('dark-mode');
-      themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-    }
-
-    themeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
-      const isDark = document.body.classList.contains('dark-mode');
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-    });
-
-    // Xử lý Chọn Màu
-    let selectedColor = '#fef3c7';
-    document.querySelectorAll('.color-option').forEach(option => {
-      option.addEventListener('click', (e) => {
-        document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
-        e.target.classList.add('selected');
-        selectedColor = e.target.getAttribute('data-color');
-      });
-    });
-
-    // Mở / Đóng Modal
-    openModalBtn.addEventListener('click', () => modalOverlay.style.display = 'flex');
-    closeModalBtn.addEventListener('click', () => modalOverlay.style.display = 'none');
-
-    // Thêm Ghi Chú mới
-    saveNoteBtn.addEventListener('click', async () => {
-      const author = document.getElementById('authorInput').value.trim();
-      const content = document.getElementById('contentInput').value.trim();
-
-      if (!author || !content) {
-        alert("Vui lòng nhập đầy đủ tên và nội dung!");
-        return;
-      }
-
-      const randomOffset = Math.floor(Math.random() * 50) - 25;
-      
-      // Tính toán tạo Ghi chú luôn xuất hiện ở ngay chính giữa màn hình hiện tại (kể cả khi đã Zoom hoặc Pan)
-      const x = (window.innerWidth / 2 - panX) / scale - 125 + randomOffset; 
-      const y = (window.innerHeight / 2 - panY) / scale - 110 + randomOffset;
-
-      const newNote = {
-        author,
-        content,
-        color: selectedColor,
-        x: x,
-        y: y,
-        createdAt: new Date().toISOString()
-      };
-
-      try {
-        saveNoteBtn.disabled = true;
-        saveNoteBtn.innerText = "Đang lưu...";
-        await addDoc(notesCollection, newNote);
-        
-        document.getElementById('authorInput').value = '';
-        document.getElementById('contentInput').value = '';
-        modalOverlay.style.display = 'none';
-      } catch (error) {
-        console.error("Lỗi khi thêm ghi chú: ", error);
-        alert("Lỗi mạng! Không thể lưu ghi chú.");
-      } finally {
-        saveNoteBtn.disabled = false;
-        saveNoteBtn.innerText = "Dán lên tường";
-      }
-    });
-
-    // Tìm kiếm ghi chú
-    searchInput.addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase();
-      document.querySelectorAll('.note').forEach(note => {
-        const author = note.querySelector('.note-author').innerText.toLowerCase();
-        const content = note.querySelector('.note-content').innerText.toLowerCase();
-        if (author.includes(query) || content.includes(query)) {
-          note.classList.remove('hidden');
-        } else {
-          note.classList.add('hidden');
-        }
-      });
-    });
-
-    /* ==============================
-       LOGIC REALTIME FIREBASE & KÉO THẢ CẬP NHẬT THEO SCALE
-    ============================== */
-    onSnapshot(notesCollection, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          renderNoteToWall(change.doc.id, change.doc.data());
-        }
-        if (change.type === "modified") {
-          updateNoteInDOM(change.doc.id, change.doc.data());
-        }
-        if (change.type === "removed") {
-          const noteEl = document.getElementById(change.doc.id);
-          if (noteEl) noteEl.remove();
-        }
-      });
-    });
-
-    function renderNoteToWall(id, data) {
-      const note = document.createElement('div');
-      note.className = 'note';
-      note.id = id;
-      note.style.backgroundColor = data.color;
-      note.style.left = `${data.x}px`;
-      note.style.top = `${data.y}px`;
-
-      note.innerHTML = `
-        <div class="note-header">
-          <span class="note-author"><i class="fas fa-user-circle"></i> ${escapeHTML(data.author)}</span>
-          <button class="btn-delete" title="Xóa ghi chú"><i class="fas fa-times"></i></button>
+        <div class="max-w-4xl mx-auto text-center my-auto z-10 py-12">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs sm:text-sm font-semibold mb-6 animate-pulse">
+                <i class="fa-solid fa-sparkles"></i> Nền tảng tạo Portfolio cá nhân hoá 2026
+            </div>
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight mb-6">
+                Xây dựng thương hiệu cá nhân <br>
+                <span class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">Ấn tượng trong phút chốc</span>
+            </h1>
+            <p class="text-slate-600 dark:text-slate-400 text-base sm:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+                Nói tạm biệt với việc viết code phức tạp. Nexus Vibe mang đến kho Template Portfolio chuyên nghiệp, lưu trữ an toàn trên đám mây Firebase và xuất trang web xịn xò chỉ bằng 1 cú click!
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button onclick="startTransitionToAuth('register')" class="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-lg shadow-xl shadow-indigo-600/30 transition-transform hover:-translate-y-1 flex items-center justify-center gap-3">
+                    <span>Trải Nghiệm Ngay</span>
+                    <i class="fa-solid fa-arrow-right-long"></i>
+                </button>
+            </div>
         </div>
-        <div class="note-content">${escapeHTML(data.content)}</div>
-      `;
+        <footer class="max-w-7xl mx-auto w-full text-center text-slate-500 text-xs sm:text-sm z-10 pb-4">
+            &copy; 2026 Nexus Vibe Studio. Mọi quyền được bảo lưu.
+        </footer>
+    </section>
 
-      note.querySelector('.btn-delete').addEventListener('click', async (e) => {
-        e.stopPropagation();
-        if(confirm("Bạn có chắc chắn muốn gỡ ghi chú này xuống không?")) {
-          await deleteDoc(doc(db, "notes", id));
-        }
-      });
+    <!-- 2. MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ (AUTH SCREEN) -->
+    <section id="auth-screen" class="spa-screen pt-20 items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
-      makeDraggable(note, id);
-      wall.appendChild(note);
+        <div class="w-full max-w-md glass-panel rounded-3xl p-8 sm:p-10 shadow-2xl relative z-10">
+            <!-- Toggle Tabs -->
+            <div class="flex bg-slate-200/60 dark:bg-slate-800/60 p-1.5 rounded-2xl mb-8 relative">
+                <div id="tab-indicator" class="absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-white dark:bg-slate-900 rounded-xl shadow-md transition-all duration-300 ease-out"></div>
+                <button onclick="switchTab('login')" id="btn-login-tab" class="relative z-10 w-1/2 py-2.5 text-sm font-semibold transition-colors text-indigo-600 dark:text-white">Đăng Nhập</button>
+                <button onclick="switchTab('register')" id="btn-register-tab" class="relative z-10 w-1/2 py-2.5 text-sm font-semibold transition-colors text-slate-500">Đăng Ký</button>
+            </div>
 
-      const query = searchInput.value.toLowerCase();
-      if(query && !(data.author.toLowerCase().includes(query) || data.content.toLowerCase().includes(query))) {
-        note.classList.add('hidden');
-      }
-    }
+            <!-- LOGIN FORM -->
+            <form id="form-login" class="space-y-5">
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold">Chào mừng trở lại!</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Nhập thông tin tài khoản của bạn để tiếp tục</p>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Email</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400"><i class="fa-regular fa-envelope"></i></span>
+                        <input type="email" id="login-email" required placeholder="name@example.com" class="w-full pl-11 pr-4 py-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                    </div>
+                </div>
 
-    function updateNoteInDOM(id, data) {
-      const note = document.getElementById(id);
-      if (note) {
-        note.style.left = `${data.x}px`;
-        note.style.top = `${data.y}px`;
-        note.style.backgroundColor = data.color;
-        note.querySelector('.note-author').innerHTML = `<i class="fas fa-user-circle"></i> ${escapeHTML(data.author)}`;
-        note.querySelector('.note-content').innerText = data.content;
-      }
-    }
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Mật khẩu</label>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="login-pass" required placeholder="••••••••" class="w-full pl-11 pr-10 py-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <button type="button" onclick="togglePassword(this)" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
 
-    let maxZIndex = 1;
-    function makeDraggable(element, id) {
-      let isDragging = false;
-      let startX, startY, initialX, initialY;
+                <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/25 transition-all">
+                    Đăng Nhập
+                </button>
 
-      const dragStart = (e) => {
-        if (e.target.tagName.toLowerCase() === 'button' || e.target.tagName.toLowerCase() === 'i') return;
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-slate-300 dark:border-slate-700"></div>
+                    <span class="flex-shrink mx-4 text-xs text-slate-400 uppercase">Hoặc</span>
+                    <div class="flex-grow border-t border-slate-300 dark:border-slate-700"></div>
+                </div>
+
+                <!-- Google Login Only -->
+                <button type="button" id="btn-google-login" class="w-full flex items-center justify-center gap-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition-colors">
+                    <i class="fa-brands fa-google text-red-500 text-lg"></i> Tiếp tục với Google
+                </button>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="form-register" class="space-y-4 hidden">
+                <div class="text-center mb-5">
+                    <h2 class="text-2xl font-bold">Tạo tài khoản mới</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Bắt đầu hành trình của bạn ngay hôm nay</p>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Email</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400"><i class="fa-regular fa-envelope"></i></span>
+                        <input type="email" id="reg-email" required placeholder="name@example.com" class="w-full pl-11 pr-4 py-2.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Mật khẩu</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="reg-pass" required placeholder="Tối thiểu 6 ký tự" class="w-full pl-11 pr-10 py-2.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <button type="button" onclick="togglePassword(this)" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/25 transition-all mt-4">
+                    Đăng Ký Ngay
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- 3. MÀN HÌNH KHẢO SÁT (ONBOARDING) -->
+    <section id="onboarding-screen" class="spa-screen pt-20 items-center justify-center p-4 sm:p-6 relative">
+        <div class="glass-panel w-full max-w-lg rounded-3xl p-8 z-10 shadow-2xl">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-500/20 text-indigo-500 flex items-center justify-center text-3xl mb-6 mx-auto">
+                <i class="fa-solid fa-hand-wave"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2 text-center">Chào mừng bạn mới!</h2>
+            <p class="text-slate-500 dark:text-slate-400 mb-8 text-sm text-center">Hãy chia sẻ một chút thông tin để chúng tôi tối ưu hóa trải nghiệm Portfolio cho bạn nhé.</p>
+
+            <form id="onboarding-form" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">1. Bạn biết đến trang web này từ đâu?</label>
+                    <select id="ob-source" required class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <option value="" disabled selected>Chọn một nguồn...</option>
+                        <option value="Mạng xã hội (Facebook, TikTok, LinkedIn)">Mạng xã hội (Facebook, TikTok, LinkedIn)</option>
+                        <option value="Tìm kiếm Google">Tìm kiếm Google</option>
+                        <option value="Bạn bè/Đồng nghiệp giới thiệu">Bạn bè/Đồng nghiệp giới thiệu</option>
+                        <option value="Khác">Khác</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">2. Chức vụ / Chuyên môn hiện tại của bạn là gì?</label>
+                    <input type="text" id="ob-job" required placeholder="VD: Frontend Developer, Designer, Content Creator..." class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500 transition-all">
+                </div>
+                <button type="submit" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl shadow-lg mt-4 transition hover:opacity-95">
+                    Hoàn Tất & Bắt Đầu Tạo Portfolio
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- 4. MÀN HÌNH DASHBOARD (TẠO PORTFOLIO) -->
+    <section id="dashboard-screen" class="spa-screen pt-24 pb-12 px-4 relative">
+        <div class="max-w-5xl mx-auto w-full z-10">
+            <div class="glass-panel p-6 sm:p-10 rounded-3xl shadow-xl">
+                <div class="mb-8 border-b border-slate-200 dark:border-slate-800 pb-4">
+                    <h1 class="text-3xl font-extrabold">Trình Tạo Portfolio Thông Minh</h1>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Điền thông tin và lựa chọn 1 trong 5 mẫu thiết kế chuyên nghiệp.</p>
+                </div>
+
+                <form id="portfolio-form" class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Họ và Tên</label>
+                            <input type="text" id="pf-name" required placeholder="Nguyễn Văn A" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Chức danh / Định vị</label>
+                            <input type="text" id="pf-title" required placeholder="Fullstack Developer / UI Designer" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Đoạn giới thiệu ngắn (Bio)</label>
+                        <textarea id="pf-bio" rows="3" required placeholder="Tóm tắt kinh nghiệm, đam mê và định hướng của bạn..." class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Kỹ năng nổi bật (Cách nhau bằng dấu phẩy)</label>
+                        <input type="text" id="pf-skills" required placeholder="JavaScript, React, Tailwind CSS, UI/UX" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Dự án tiêu biểu (Tên - Mô tả)</label>
+                        <input type="text" id="pf-project" required placeholder="E-commerce App - Web bán hàng tích hợp thanh toán" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Email / Link Liên hệ</label>
+                        <input type="text" id="pf-contact" required placeholder="contact@domain.com hoặc link LinkedIn" class="w-full px-4 py-3 bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <!-- 5 MẪU TEMPLATE -->
+                    <div class="pt-4">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">Lựa chọn Template của bạn:</label>
+                        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                            
+                            <!-- T1: Minimalist -->
+                            <label class="cursor-pointer group">
+                                <input type="radio" name="template" value="minimalist" class="peer sr-only" checked>
+                                <div class="p-4 rounded-2xl border-2 border-slate-300 dark:border-slate-700 peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 transition text-center h-full flex flex-col items-center justify-center gap-2">
+                                    <i class="fa-solid fa-leaf text-2xl text-slate-500 dark:text-slate-300"></i>
+                                    <div>
+                                        <h4 class="font-bold text-sm">Minimalist</h4>
+                                        <p class="text-[10px] text-slate-500 mt-1">Trắng sáng, tối giản</p>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <!-- T2: Cyberpunk -->
+                            <label class="cursor-pointer group">
+                                <input type="radio" name="template" value="cyberpunk" class="peer sr-only">
+                                <div class="p-4 rounded-2xl border-2 border-slate-300 dark:border-slate-700 peer-checked:border-pink-500 peer-checked:bg-pink-500/10 transition text-center h-full flex flex-col items-center justify-center gap-2">
+                                    <i class="fa-solid fa-bolt text-2xl text-pink-500"></i>
+                                    <div>
+                                        <h4 class="font-bold text-sm">Cyberpunk</h4>
+                                        <p class="text-[10px] text-slate-500 mt-1">Neon, ma trận tối</p>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <!-- T3: Terminal -->
+                            <label class="cursor-pointer group">
+                                <input type="radio" name="template" value="terminal" class="peer sr-only">
+                                <div class="p-4 rounded-2xl border-2 border-slate-300 dark:border-slate-700 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 transition text-center h-full flex flex-col items-center justify-center gap-2">
+                                    <i class="fa-solid fa-terminal text-2xl text-emerald-500"></i>
+                                    <div>
+                                        <h4 class="font-bold text-sm">Dev Terminal</h4>
+                                        <p class="text-[10px] text-slate-500 mt-1">Giao diện viết Code IDE</p>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <!-- T4: Glassmorphism -->
+                            <label class="cursor-pointer group">
+                                <input type="radio" name="template" value="glassmorphism" class="peer sr-only">
+                                <div class="p-4 rounded-2xl border-2 border-slate-300 dark:border-slate-700 peer-checked:border-purple-500 peer-checked:bg-purple-500/10 transition text-center h-full flex flex-col items-center justify-center gap-2">
+                                    <i class="fa-solid fa-cubes text-2xl text-purple-500"></i>
+                                    <div>
+                                        <h4 class="font-bold text-sm">Glassmorphic</h4>
+                                        <p class="text-[10px] text-slate-500 mt-1">Kính mờ, Gradient</p>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <!-- T5: Editorial -->
+                            <label class="cursor-pointer group col-span-2 lg:col-span-1">
+                                <input type="radio" name="template" value="editorial" class="peer sr-only">
+                                <div class="p-4 rounded-2xl border-2 border-slate-300 dark:border-slate-700 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 transition text-center h-full flex flex-col items-center justify-center gap-2">
+                                    <i class="fa-solid fa-newspaper text-2xl text-amber-500"></i>
+                                    <div>
+                                        <h4 class="font-bold text-sm">Editorial</h4>
+                                        <p class="text-[10px] text-slate-500 mt-1">Tạp chí cao cấp (Serif)</p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-4 mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg rounded-2xl shadow-xl shadow-indigo-600/30 hover:scale-[1.01] transition-transform">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Xuất Bản Portfolio
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- CUSTOM NOTIFICATION MODAL -->
+    <div id="toast" class="fixed bottom-6 right-6 transform translate-y-32 opacity-0 transition-all duration-300 z-[9999] bg-slate-900 border border-indigo-500/30 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <i id="toast-icon" class="fa-solid fa-check"></i>
+        </div>
+        <div>
+            <h4 class="font-semibold text-sm" id="toast-title">Thông báo</h4>
+            <p class="text-xs text-slate-400" id="toast-desc">Thao tác thành công.</p>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT: LOGIC & FIREBASE -->
+    <script type="module">
+        // Sử dụng Firebase SDK v10.8.1 (Phiên bản module chuẩn)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // Config Firebase theo yêu cầu
+        const firebaseConfig = {
+            apiKey: "AIzaSyAZiGa7KakG43YbCuYw1VYBwNdGgivVZtU",
+            authDomain: "buctuongghichu.firebaseapp.com",
+            projectId: "buctuongghichu",
+            storageBucket: "buctuongghichu.firebasestorage.app",
+            messagingSenderId: "542301209901",
+            appId: "1:542301209901:web:f142e4a549e50ede0d7fa4",
+            measurementId: "G-V7NQZK0T1H"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+
+        // --- GIAO DIỆN & HIỆU ỨNG (UI / UX) ---
         
-        isDragging = true;
-        maxZIndex++;
-        element.style.zIndex = maxZIndex;
+        window.toggleTheme = () => {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('theme-icon');
+            if (document.documentElement.classList.contains('dark')) {
+                icon.className = 'fa-solid fa-sun text-amber-500';
+            } else {
+                icon.className = 'fa-solid fa-moon text-slate-600';
+            }
+        };
 
-        if (e.type === 'touchstart') {
-          startX = e.touches[0].clientX;
-          startY = e.touches[0].clientY;
-        } else {
-          startX = e.clientX;
-          startY = e.clientY;
-        }
+        window.showToast = (title, desc, isError = false) => {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-desc').innerText = desc;
+            
+            const icon = document.getElementById('toast-icon');
+            icon.className = isError ? 'fa-solid fa-xmark text-red-400' : 'fa-solid fa-check text-emerald-400';
+            icon.parentElement.className = isError 
+                ? 'w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center' 
+                : 'w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center';
 
-        initialX = parseFloat(element.style.left || 0);
-        initialY = parseFloat(element.style.top || 0);
+            gsap.to(toast, { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.5)" });
+            setTimeout(() => gsap.to(toast, { y: 32, opacity: 0, duration: 0.3 }), 3000);
+        };
 
-        document.addEventListener('mousemove', dragAction);
-        document.addEventListener('touchmove', dragAction, { passive: false });
-        document.addEventListener('mouseup', dragEnd);
-        document.addEventListener('touchend', dragEnd);
-      };
+        window.togglePassword = (btn) => {
+            const input = btn.parentElement.querySelector('input');
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text'; icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password'; icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        };
 
-      const dragAction = (e) => {
-        if (!isDragging) return;
-        e.preventDefault(); 
+        // Điều hướng màn hình (SPA Router Logic)
+        window.showScreen = (targetId, tab = null) => {
+            if(tab) window.switchTab(tab);
+            
+            const screens = document.querySelectorAll('.spa-screen');
+            const maxDim = Math.max(window.innerWidth, window.innerHeight) * 2.5;
+            const tl = gsap.timeline();
 
-        let currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-        let currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+            tl.to("#transition-circle", { width: maxDim, height: maxDim, duration: 0.7, ease: "power4.inOut" })
+              .add(() => {
+                  screens.forEach(s => { s.style.display = 'none'; s.style.opacity = '0'; });
+                  const target = document.getElementById(targetId);
+                  target.style.display = 'flex';
+                  gsap.to(target, { opacity: 1, duration: 0.4 });
+                  window.scrollTo(0, 0);
+              })
+              .to("#transition-circle", { width: 0, height: 0, duration: 0.5, ease: "power4.inOut" });
+        };
 
-        // Cập nhật quan trọng: Chia độ dời cho tỷ lệ Zoom (scale)
-        let dx = (currentX - startX) / scale;
-        let dy = (currentY - startY) / scale;
+        window.startTransitionToAuth = (mode) => { showScreen('auth-screen', mode); };
 
-        let newLeft = initialX + dx;
-        let newTop = initialY + dy;
+        window.switchTab = (mode) => {
+            const login = document.getElementById('form-login');
+            const reg = document.getElementById('form-register');
+            const ind = document.getElementById('tab-indicator');
+            const btnL = document.getElementById('btn-login-tab');
+            const btnR = document.getElementById('btn-register-tab');
 
-        element.style.left = `${newLeft}px`;
-        element.style.top = `${newTop}px`;
-      };
+            if (mode === 'login') {
+                ind.style.transform = 'translateX(0%)';
+                btnL.classList.add('text-indigo-600', 'dark:text-white'); btnL.classList.remove('text-slate-500');
+                btnR.classList.remove('text-indigo-600', 'dark:text-white'); btnR.classList.add('text-slate-500');
+                
+                reg.classList.add('hidden'); login.classList.remove('hidden');
+                gsap.fromTo(login, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.3 });
+            } else {
+                ind.style.transform = 'translateX(100%)';
+                btnR.classList.add('text-indigo-600', 'dark:text-white'); btnR.classList.remove('text-slate-500');
+                btnL.classList.remove('text-indigo-600', 'dark:text-white'); btnL.classList.add('text-slate-500');
+                
+                login.classList.add('hidden'); reg.classList.remove('hidden');
+                gsap.fromTo(reg, { opacity: 0, scale: 0.95 }, { opacity: 1, scale: 1, duration: 0.3 });
+            }
+        };
 
-      const dragEnd = async (e) => {
-        if (!isDragging) return;
-        isDragging = false;
+        // --- XỬ LÝ FIREBASE ---
 
-        document.removeEventListener('mousemove', dragAction);
-        document.removeEventListener('touchmove', dragAction);
-        document.removeEventListener('mouseup', dragEnd);
-        document.removeEventListener('touchend', dragEnd);
+        // Listener trạng thái đăng nhập
+        onAuthStateChanged(auth, async (user) => {
+            currentUser = user;
+            const guestMenu = document.getElementById('nav-guest-menu');
+            const userMenu = document.getElementById('nav-user-menu');
 
-        try {
-          const noteRef = doc(db, "notes", id);
-          await updateDoc(noteRef, {
-            x: parseFloat(element.style.left),
-            y: parseFloat(element.style.top)
-          });
-        } catch (error) {
-          console.error("Lỗi cập nhật vị trí: ", error);
-        }
-      };
+            if (user) {
+                guestMenu.classList.add('hidden'); userMenu.classList.remove('hidden'); userMenu.classList.add('flex');
+                document.getElementById('user-email-display').innerText = user.email;
 
-      element.addEventListener('mousedown', dragStart);
-      element.addEventListener('touchstart', dragStart, { passive: false });
-    }
+                // Kiểm tra đã Onboard chưa?
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists() && userDoc.data().onboarded) {
+                    showScreen('dashboard-screen');
+                    
+                    // Tải data cũ vào form nếu có
+                    const pfDoc = await getDoc(doc(db, "portfolios", user.uid));
+                    if(pfDoc.exists()) {
+                        const d = pfDoc.data();
+                        document.getElementById('pf-name').value = d.name || '';
+                        document.getElementById('pf-title').value = d.title || '';
+                        document.getElementById('pf-bio').value = d.bio || '';
+                        document.getElementById('pf-skills').value = (d.skills || []).join(', ');
+                        document.getElementById('pf-project').value = d.project || '';
+                        document.getElementById('pf-contact').value = d.contact || '';
+                        document.querySelector(`input[name="template"][value="${d.template || 'minimalist'}"]`).checked = true;
+                    }
+                } else {
+                    showScreen('onboarding-screen');
+                }
+            } else {
+                guestMenu.classList.remove('hidden'); guestMenu.classList.add('flex'); userMenu.classList.add('hidden'); userMenu.classList.remove('flex');
+                showScreen('welcome-screen');
+            }
+        });
 
-    function escapeHTML(str) {
-      const div = document.createElement('div');
-      div.innerText = str;
-      return div.innerHTML;
-    }
-  </script>
+        // Đăng ký
+        document.getElementById('form-register').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('reg-email').value;
+            const pass = document.getElementById('reg-pass').value;
+            try {
+                await createUserWithEmailAndPassword(auth, email, pass);
+                window.showToast("Đăng ký thành công", "Đang tự động đăng nhập...");
+            } catch (err) { window.showToast("Lỗi đăng ký", err.message, true); }
+        });
+
+        // Đăng nhập
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                window.showToast("Thành công", "Đăng nhập thành công!");
+            } catch (err) { window.showToast("Lỗi", "Sai tài khoản hoặc mật khẩu.", true); }
+        });
+
+        // Google Auth
+        document.getElementById('btn-google-login').addEventListener('click', async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                window.showToast("Thành công", "Xác thực Google thành công!");
+            } catch (err) { window.showToast("Lỗi", "Đăng nhập Google thất bại.", true); }
+        });
+
+        // Đăng xuất
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            signOut(auth); window.showToast("Đã thoát", "Bạn đã đăng xuất tài khoản.");
+        });
+
+        // Lưu Onboarding
+        document.getElementById('onboarding-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const source = document.getElementById('ob-source').value;
+            const job = document.getElementById('ob-job').value;
+            try {
+                await setDoc(doc(db, "users", currentUser.uid), {
+                    email: currentUser.email, source: source, jobTitle: job, onboarded: true, createdAt: new Date()
+                });
+                window.showToast("Tuyệt vời!", "Cảm ơn bạn đã chia sẻ.");
+                showScreen('dashboard-screen');
+            } catch (err) { window.showToast("Lỗi", "Không thể lưu dữ liệu.", true); }
+        });
+
+        // --- CORE: XUẤT PORTFOLIO HTML (5 TEMPLATE) ---
+        document.getElementById('portfolio-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('pf-name').value;
+            const title = document.getElementById('pf-title').value;
+            const bio = document.getElementById('pf-bio').value;
+            const skillsArr = document.getElementById('pf-skills').value.split(',').map(s => s.trim()).filter(Boolean);
+            const project = document.getElementById('pf-project').value;
+            const contact = document.getElementById('pf-contact').value;
+            const template = document.querySelector('input[name="template"]:checked').value;
+
+            // Lưu Firebase Firestore
+            await setDoc(doc(db, "portfolios", currentUser.uid), {
+                name, title, bio, skills: skillsArr, project, contact, template, updatedAt: new Date()
+            }, { merge: true });
+
+            window.showToast("Đang tạo...", "Vui lòng đợi giây lát.");
+
+            let htmlString = "";
+            const skillBadges = skillsArr.map(s => `<span class="badge">${s}</span>`).join('');
+
+            // MẪU 1: MINIMALIST
+            if (template === 'minimalist') {
+                htmlString = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${name} - Portfolio</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+                    body { font-family: 'Inter', sans-serif; background: #fafafa; color: #171717; max-width: 700px; margin: 0 auto; padding: 60px 20px; line-height: 1.6; }
+                    h1 { font-size: 2.8rem; font-weight: 700; margin: 0; letter-spacing: -1px; }
+                    .subtitle { color: #525252; font-size: 1.2rem; margin-bottom: 30px; font-weight: 500; }
+                    .section { margin-top: 45px; }
+                    h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px; color: #a3a3a3; margin-bottom: 15px; border-bottom: 1px solid #e5e5e5; padding-bottom: 8px;}
+                    .badge { display: inline-block; background: #f3f4f6; border: 1px solid #e5e7eb; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; margin: 0 6px 8px 0; font-weight: 500; }
+                    .card { background: #fff; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+                </style></head><body>
+                    <header><h1>${name}</h1><div class="subtitle">${title}</div></header>
+                    <main>
+                        <p>${bio}</p>
+                        <div class="section"><h3>Chuyên môn</h3><div>${skillBadges}</div></div>
+                        <div class="section"><h3>Dự án nổi bật</h3><div class="card">${project}</div></div>
+                        <div class="section"><h3>Kết nối</h3><p>${contact}</p></div>
+                    </main>
+                </body></html>`;
+            }
+            // MẪU 2: CYBERPUNK
+            else if (template === 'cyberpunk') {
+                htmlString = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${name} - Cyber</title>
+                <style>
+                    body { font-family: 'Courier New', monospace; background: #0a0a0f; color: #00f3ff; padding: 40px 20px; max-width: 800px; margin: 0 auto; }
+                    h1 { color: #ff007f; text-shadow: 0 0 10px #ff007f; font-size: 3rem; text-transform: uppercase; margin: 0 0 10px 0; border-left: 10px solid #ffe600; padding-left: 15px;}
+                    .subtitle { color: #ffe600; font-size: 1.2rem; margin-bottom: 40px; }
+                    .box { border: 1px solid rgba(0,243,255,0.4); padding: 25px; margin-top: 30px; box-shadow: 0 0 20px rgba(0,243,255,0.1) inset; position: relative;}
+                    .box::before { content: ''; position: absolute; top: -1px; left: -1px; width: 20px; height: 20px; border-top: 2px solid #00f3ff; border-left: 2px solid #00f3ff; }
+                    .badge { display: inline-block; border: 1px solid #ff007f; color: #ff007f; padding: 4px 10px; margin: 0 6px 8px 0; font-size: 0.9rem; text-shadow: 0 0 5px #ff007f; background: rgba(255,0,127,0.1);}
+                </style></head><body>
+                    <h1>${name}</h1><div class="subtitle">SYS_ROLE: ${title}</div>
+                    <div class="box"><h3>[ LOG_DATA: BIO ]</h3><p>${bio}</p></div>
+                    <div class="box"><h3>[ INIT_MODULES: SKILLS ]</h3>${skillBadges}</div>
+                    <div class="box"><h3>[ EXEC: PROJECT ]</h3><p>> ${project}</p></div>
+                    <div class="box"><h3>[ PING: CONTACT ]</h3><p>> ${contact}</p></div>
+                </body></html>`;
+            }
+            // MẪU 3: DEV TERMINAL
+            else if (template === 'terminal') {
+                htmlString = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${name} - Console</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+                    body { font-family: 'Fira Code', monospace; background: #1e1e2e; color: #cdd6f4; padding: 50px 20px; max-width: 850px; margin: 0 auto; }
+                    .window { background: #181825; border-radius: 12px; border: 1px solid #313244; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+                    .header { background: #11111b; padding: 15px; display: flex; gap: 8px; border-bottom: 1px solid #313244;}
+                    .dot { width: 14px; height: 14px; border-radius: 50%; }
+                    .red { background: #f38ba8; } .yellow { background: #f9e2af; } .green { background: #a6e3a1; }
+                    .body { padding: 40px; line-height: 1.8; font-size: 0.95rem; }
+                    .keyword { color: #cba6f7; } .func { color: #89b4fa; } .string { color: #a6e3a1; } .comment { color: #6c7086; }
+                    .badge { color: #fab387; background: #313244; padding: 4px 10px; border-radius: 6px; margin: 0 6px 6px 0; display: inline-block;}
+                </style></head><body>
+                    <div class="window">
+                        <div class="header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div></div>
+                        <div class="body">
+                            <span class="comment">// Portfolio initialized</span><br><br>
+                            <span class="keyword">const</span> <span class="func">developer</span> = {<br>
+                            &nbsp;&nbsp;name: <span class="string">"${name}"</span>,<br>
+                            &nbsp;&nbsp;title: <span class="string">"${title}"</span>,<br>
+                            &nbsp;&nbsp;bio: <span class="string">"${bio}"</span>,<br>
+                            &nbsp;&nbsp;featuredProject: <span class="string">"${project}"</span>,<br>
+                            &nbsp;&nbsp;contact: <span class="string">"${contact}"</span><br>
+                            };<br><br>
+                            <span class="keyword">export const</span> <span class="func">skills</span> = [<br>&nbsp;&nbsp;${skillBadges}<br>];
+                        </div>
+                    </div>
+                </body></html>`;
+            }
+            // MẪU 4: GLASSMORPHISM
+            else if (template === 'glassmorphism') {
+                htmlString = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${name} - Glass</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+                    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #4c1d95 50%, #1e1b4b 100%); color: #fff; min-height: 100vh; padding: 60px 20px; box-sizing: border-box; }
+                    .container { max-width: 800px; margin: 0 auto; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid rgba(255,255,255,0.1); border-radius: 30px; padding: 50px; box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
+                    h1 { font-size: 3.5rem; font-weight: 800; background: linear-gradient(to right, #a5b4fc, #f0abfc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
+                    .subtitle { font-size: 1.3rem; color: #cbd5e1; margin-top: 8px; margin-bottom: 30px; font-weight: 600; }
+                    .badge { display: inline-block; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 16px; border-radius: 30px; font-size: 0.85rem; margin: 0 8px 10px 0; }
+                    .card { background: rgba(0,0,0,0.25); border-radius: 20px; padding: 25px; margin-top: 25px; border: 1px solid rgba(255,255,255,0.05);}
+                    h3 { color: #a5b4fc; margin-top: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;}
+                </style></head><body>
+                    <div class="container">
+                        <h1>${name}</h1><div class="subtitle">${title}</div>
+                        <p style="line-height:1.8; color:#e2e8f0; font-size: 1.1rem;">${bio}</p>
+                        <div class="card"><h3>Kỹ năng</h3>${skillBadges}</div>
+                        <div class="card"><h3>Dự án</h3><p>${project}</p></div>
+                        <div class="card"><h3>Liên hệ</h3><p>${contact}</p></div>
+                    </div>
+                </body></html>`;
+            }
+            // MẪU 5: EDITORIAL LUXURY
+            else if (template === 'editorial') {
+                htmlString = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${name} - Editorial</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Inter:wght@400;600&display=swap');
+                    body { font-family: 'Playfair Display', serif; background: #fdfcf8; color: #1c1b1a; max-width: 800px; margin: 0 auto; padding: 80px 20px; line-height: 1.8; }
+                    header { border-bottom: 2px solid #1c1b1a; padding-bottom: 30px; margin-bottom: 50px; text-align: center; }
+                    h1 { font-size: 4rem; font-style: italic; margin: 0; font-weight: 600; }
+                    .subtitle { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.25em; font-size: 0.8rem; color: #6e6a64; margin-top: 15px; font-weight: 600;}
+                    .bio { font-size: 1.4rem; font-style: italic; text-align: center; margin: 40px 0; color: #3d3b38; }
+                    .badge { font-family: 'Inter', sans-serif; display: inline-block; border: 1px solid #1c1b1a; padding: 6px 14px; margin: 0 8px 10px 0; font-size: 0.75rem; text-transform: uppercase; font-weight: 600;}
+                    .section { margin-top: 50px; }
+                    .section-title { font-family: 'Inter', sans-serif; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.2em; font-weight: 600; border-bottom: 1px solid #e0ded8; padding-bottom: 8px; margin-bottom: 20px; color: #6e6a64;}
+                </style></head><body>
+                    <header>
+                        <h1>${name}</h1>
+                        <div class="subtitle">${title}</div>
+                    </header>
+                    <div class="bio">"${bio}"</div>
+                    <div class="section"><div class="section-title">Chuyên môn</div><div>${skillBadges}</div></div>
+                    <div class="section"><div class="section-title">Dự án chọn lọc</div><p style="font-size:1.1rem;">${project}</p></div>
+                    <div class="section"><div class="section-title">Thông tin kết nối</div><p style="font-family:'Inter', sans-serif;">${contact}</p></div>
+                </body></html>`;
+            }
+
+            // Mở tab mới với nội dung HTML vừa tạo bằng Blob
+            setTimeout(() => {
+                const blob = new Blob([htmlString], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            }, 500);
+        });
+    </script>
 </body>
 </html>
