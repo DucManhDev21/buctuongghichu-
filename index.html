@@ -3,472 +3,423 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniTool Hub - Trợ thủ kỹ thuật số đa năng</title>
+    <title>OmniTool Hub - Trợ thủ kỹ thuật số đa năng thế hệ mới</title>
 
     <!-- Thư viện CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <!-- Thêm ScrollTrigger để làm hiệu ứng cuộn mượt mà -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
-        /* ================= BẢN THIẾT KẾ CSS ================= */
+        /* ================= BẢN THIẾT KẾ CSS & RESPONSIVE ================= */
         :root {
-            --bg-color: #f8fafc; --text-color: #0f172a; --glass-bg: rgba(255,255,255,0.85); --glass-border: rgba(0,0,0,0.1);
-            --primary: #ff69b4; /* Chuyển màu chủ đạo sang tông hồng theo yêu cầu */ 
-            --primary-hover: #ff1493; --secondary: #9333ea; --surface: #ffffff; --input-bg: #f1f5f9; --border: #e2e8f0;
+            --bg-color: #f8fafc; 
+            --text-color: #0f172a; 
+            --glass-bg: rgba(255, 255, 255, 0.85); 
+            --glass-border: rgba(0, 0, 0, 0.08);
+            --primary: #4f46e5; 
+            --primary-hover: #4338ca; 
+            --secondary: #ec4899; 
+            --surface: #ffffff; 
+            --input-bg: #f1f5f9; 
+            --border: #e2e8f0;
+            --pink-accent: #ec4899;
         }
         [data-theme="dark"] {
-            --bg-color: #020617; --text-color: #f1f5f9; --glass-bg: rgba(15,23,42,0.85); --glass-border: rgba(255,255,255,0.1);
-            --surface: #0f172a; --input-bg: #1e293b; --border: #334155;
-            --primary: #ff69b4; --secondary: #c084fc;
+            --bg-color: #020617; 
+            --text-color: #f1f5f9; 
+            --glass-bg: rgba(15, 23, 42, 0.85); 
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --surface: #0f172a; 
+            --input-bg: #1e293b; 
+            --border: #334155;
+            --pink-accent: #f472b6;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         body { background: var(--bg-color); color: var(--text-color); overflow-x: hidden; min-height: 100vh; transition: background 0.3s, color 0.3s; }
         
-        /* Hiệu ứng nền */
-        .bg-glow { position: fixed; border-radius: 50%; filter: blur(100px); pointer-events: none; z-index: -1; opacity: 0.4; }
-        .bg-glow.g1 { top: -10%; left: -10%; width: 400px; height: 400px; background: var(--primary); }
-        .bg-glow.g2 { bottom: -10%; right: -10%; width: 400px; height: 400px; background: var(--secondary); }
+        /* Hiệu ứng nền Glow */
+        .bg-glow { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: -1; opacity: 0.35; }
+        .bg-glow.g1 { top: -10%; left: -10%; width: 500px; height: 500px; background: var(--primary); }
+        .bg-glow.g2 { bottom: -10%; right: -10%; width: 500px; height: 500px; background: var(--secondary); }
 
-        /* Tiện ích chung */
-        .flex { display: flex; } .flex-col { display: flex; flex-direction: column; } .items-center { align-items: center; }
-        .justify-between { justify-content: space-between; } .justify-center { justify-content: center; }
-        .gap-2 { gap: 0.5rem; } .gap-4 { gap: 1rem; } .p-4 { padding: 1rem; } .p-6 { padding: 1.5rem; }
+        /* Tiện ích Layout */
+        .flex { display: flex; } 
+        .flex-col { display: flex; flex-direction: column; } 
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; } 
+        .justify-center { justify-content: center; }
+        .gap-2 { gap: 0.5rem; } .gap-4 { gap: 1rem; } .gap-6 { gap: 1.5rem; }
+        .p-4 { padding: 1rem; } .p-6 { padding: 1.5rem; } .p-8 { padding: 2rem; }
         .w-full { width: 100%; } .h-full { height: 100%; } .text-center { text-align: center; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .mt-2 { margin-top: 0.5rem; } .mb-2 { margin-bottom: 0.5rem; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
         
-        /* Components */
+        /* Glassmorphism & Components */
         .glass { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); }
-        .btn { padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 0.9rem; }
-        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 105, 180, 0.4); }
+        .btn { padding: 0.75rem 1.5rem; border-radius: 0.75rem; border: none; cursor: pointer; font-weight: 600; transition: all 0.25s ease; font-size: 0.9rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4); }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-color); }
-        .btn-outline:hover { background: var(--input-bg); }
+        .btn-outline:hover { background: var(--input-bg); transform: translateY(-1px); }
         
-        .input { width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-color); outline: none; transition: border 0.2s; }
-        .input:focus { border-color: var(--primary); }
+        .input { width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-color); outline: none; transition: border 0.2s, box-shadow 0.2s; }
+        .input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15); }
         textarea.input { resize: vertical; min-height: 120px; }
         
-        /* CÁC PHÂN ĐOẠN TRANG (MÀN HÌNH) */
-        #intro-screen { position: fixed; inset: 0; z-index: 50; overflow-y: auto; background: var(--bg-color); transition: opacity 0.5s; }
-        #auth-screen { position: fixed; inset: 0; display: none; justify-content: center; align-items: center; z-index: 40; }
-        #app-layout { display: none; height: 100vh; overflow: hidden; }
-
-        /* Intro Screen Styles */
-        .intro-hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem; }
-        .intro-title { font-size: 4rem; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem; line-height: 1.2; }
-        .intro-subtitle { font-size: 1.2rem; color: #64748b; max-width: 700px; line-height: 1.6; margin-bottom: 2rem; }
-        .scroll-indicator { font-size: 2rem; color: var(--primary); animation: bounce 2s infinite; margin-top: 3rem; opacity: 0.7; }
+        /* Layout Tổng */
+        #app-layout { display: flex; height: 100vh; overflow: hidden; position: relative; }
+        .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; padding: 1rem 0; z-index: 10; transition: transform 0.3s ease; }
+        .sidebar-header { padding: 0.5rem 1.5rem 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .nav-category { padding: 1rem 1.5rem 0.4rem; font-size: 0.7rem; text-transform: uppercase; color: #64748b; font-weight: 800; letter-spacing: 0.05em; }
+        .nav-item { padding: 0.75rem 1.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; color: var(--text-color); opacity: 0.8; transition: all 0.2s; border-left: 3px solid transparent; font-size: 0.875rem; font-weight: 500; }
+        .nav-item:hover, .nav-item.active { opacity: 1; background: var(--input-bg); border-left-color: var(--pink-accent); color: var(--pink-accent); }
         
-        .intro-section { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
-        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 3rem; }
-        .feature-card { padding: 2.5rem; border-radius: 1.5rem; transition: transform 0.3s; text-align: left; }
-        .feature-card:hover { transform: translateY(-10px); }
-        .feature-icon { font-size: 2.5rem; color: var(--primary); margin-bottom: 1.5rem; }
-        .feature-card h3 { font-size: 1.5rem; margin-bottom: 1rem; }
-        .feature-card p { color: #64748b; line-height: 1.6; }
-
-        /* Auth Screen */
-        .auth-box { width: 100%; max-width: 400px; border-radius: 1.5rem; padding: 2.5rem; position: relative; margin: 1rem; }
-        .tab-group { display: flex; background: var(--input-bg); padding: 0.25rem; border-radius: 0.75rem; margin-bottom: 2rem; position: relative; }
-        .tab-btn { flex: 1; padding: 0.5rem; text-align: center; cursor: pointer; font-size: 0.9rem; font-weight: 600; z-index: 2; color: #64748b; }
-        .tab-btn.active { color: var(--text-color); }
-        .tab-slider { position: absolute; top: 0.25rem; bottom: 0.25rem; width: calc(50% - 0.25rem); background: var(--surface); border-radius: 0.5rem; transition: left 0.3s; z-index: 1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .header { height: 64px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 1.5rem; background: var(--surface); z-index: 5; }
+        .workspace { flex: 1; padding: 2rem; overflow-y: auto; background: var(--bg-color); scroll-behavior: smooth; }
         
-        /* App Layout */
-        .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; padding: 1rem 0; z-index: 30; }
-        .nav-category { padding: 0.5rem 1.5rem; font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-top: 1rem; }
-        .nav-item { padding: 0.75rem 1.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; color: var(--text-color); opacity: 0.8; transition: all 0.2s; border-left: 3px solid transparent; font-size: 0.9rem; }
-        .nav-item:hover, .nav-item.active { opacity: 1; background: var(--input-bg); border-left-color: var(--primary); }
+        .tool-container { max-width: 1000px; margin: 0 auto; background: var(--surface); border-radius: 1.25rem; border: 1px solid var(--border); padding: 2rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
+        .tool-title { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem; color: var(--text-color); }
+        .tool-desc { color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
         
-        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; }
-        .header { height: 64px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; background: var(--surface); }
-        .workspace { flex: 1; padding: 2rem; overflow-y: auto; background: var(--bg-color); }
-        
-        .tool-container { max-width: 900px; margin: 0 auto; background: var(--surface); border-radius: 1rem; border: 1px solid var(--border); padding: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); overflow-x: hidden; }
-        .tool-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
-        .tool-desc { color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
-        
-        /* TRANSITION TRÒN MÀU HỒNG */
-        #transition-circle { 
-            position: fixed; top: 50%; left: 50%; width: 0; height: 0; 
-            border-radius: 50%; background: #ff69b4; /* Hình tròn hồng */
-            transform: translate(-50%, -50%); z-index: 999; pointer-events: none; 
-            display: flex; align-items: center; justify-content: center;
+        /* ================= ANIMATION CHUYỂN HƯỚNG MÀU HỒNG ================= */
+        #transition-circle {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 0px;
+            height: 0px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff69b4, #ec4899, #db2777);
+            transform: translate(-50%, -50%);
+            z-index: 9998;
+            pointer-events: none;
+            box-shadow: 0 0 80px rgba(236, 72, 153, 0.8);
         }
-        #transition-text {
-            color: white; font-size: 2rem; font-weight: 700; opacity: 0;
-            white-space: nowrap; text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        #transition-text-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            text-align: center;
+            width: 90%;
         }
-        
-        /* Utility */
+        #transition-text-container i { font-size: 2.5rem; margin-bottom: 1rem; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        #transition-text { font-size: 1.5rem; font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,0.4); letter-spacing: 0.02em; }
+
+        /* Toast Notifications */
         .hidden { display: none !important; }
-        #toast { position: fixed; bottom: -100px; right: 24px; background: var(--surface); border-left: 4px solid var(--primary); padding: 1rem 1.5rem; border-radius: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 1000; transition: bottom 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); font-weight: 500; }
-        .menu-toggle-btn { display: none; background: none; border: none; color: var(--text-color); font-size: 1.5rem; cursor: pointer; }
+        #toast { position: fixed; bottom: -100px; right: 24px; background: var(--surface); border-left: 5px solid var(--pink-accent); padding: 1rem 1.5rem; border-radius: 0.75rem; box-shadow: 0 10px 30px rgba(0,0,0,0.25); z-index: 10000; transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 0.75rem; font-weight: 600; font-size: 0.95rem; }
+
+        /* Responsive UI Overlay Mobile */
+        #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 9; }
+
+        /* ================= PHẦN GIỚI THIỆU WEB CHI TIẾT (INTRO LANDING) ================= */
+        .intro-hero { text-align: center; padding: 3rem 1rem 4rem; position: relative; }
+        .intro-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; border-radius: 2rem; background: rgba(236, 72, 153, 0.15); color: var(--pink-accent); font-size: 0.85rem; font-weight: 700; margin-bottom: 1.5rem; border: 1px solid rgba(236, 72, 153, 0.3); }
+        .intro-title { font-size: 3rem; font-weight: 900; line-height: 1.2; margin-bottom: 1.25rem; background: linear-gradient(135deg, var(--text-color) 30%, var(--pink-accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .intro-subtitle { font-size: 1.15rem; color: #64748b; max-width: 780px; margin: 0 auto 2.5rem; line-height: 1.7; font-weight: 400; }
         
-        /* TỐI ƯU RESPONSIVE CHO ĐIỆN THOẠI (CHỐNG VỠ GIAO DIỆN) */
+        .stat-card { background: var(--surface); padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--border); text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .stat-num { font-size: 2.25rem; font-weight: 900; color: var(--pink-accent); margin-bottom: 0.25rem; }
+        .stat-label { font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+
+        .feature-box { background: var(--surface); padding: 2rem; border-radius: 1.25rem; border: 1px solid var(--border); transition: transform 0.3s, box-shadow 0.3s; position: relative; overflow: hidden; }
+        .feature-box:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
+        .feature-icon-wrapper { width: 56px; height: 56px; border-radius: 1rem; background: linear-gradient(135deg, rgba(79,70,229,0.1), rgba(236,72,153,0.15)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--pink-accent); margin-bottom: 1.25rem; }
+        
+        .section-heading { font-size: 2rem; font-weight: 800; margin-bottom: 1rem; text-align: center; }
+        .section-desc { text-align: center; color: #64748b; margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+        /* Media Queries Tương thích Điện thoại & Máy tính */
+        @media (max-width: 992px) {
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+            .grid-3 { grid-template-columns: repeat(2, 1fr); }
+        }
         @media (max-width: 768px) {
-            .grid-2 { grid-template-columns: 1fr; }
-            .intro-title { font-size: 2.5rem; }
+            .sidebar { position: fixed; top: 0; left: 0; height: 100vh; transform: translateX(-100%); width: 280px; }
+            .sidebar.active { transform: translateX(0); }
+            #sidebar-overlay.active { display: block; }
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
             .header { padding: 0 1rem; }
             .workspace { padding: 1rem; }
-            .tool-container { padding: 1.5rem; }
-            .menu-toggle-btn { display: block; }
-            
-            /* Sidebar biến thành dạng trượt trên Mobile */
-            #app-layout { flex-direction: column; }
-            .sidebar { position: fixed; left: -100%; top: 64px; height: calc(100vh - 64px); transition: left 0.3s ease; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
-            .sidebar.show { left: 0; }
-            
-            #dw-cv, #bg-c { max-width: 100%; height: auto !important; }
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-20px); }
-            60% { transform: translateY(-10px); }
+            .tool-container { padding: 1.25rem; }
+            .intro-title { font-size: 2rem; }
+            .intro-subtitle { font-size: 1rem; }
         }
     </style>
 </head>
 <body>
     <div class="bg-glow g1"></div>
     <div class="bg-glow g2"></div>
-    
-    <!-- HIỆU ỨNG CHUYỂN CẢNH TRÒN HỒNG -->
-    <div id="transition-circle">
+
+    <!-- HIỆU ỨNG CHUYỂN HƯỚNG BẰNG HÌNH TRÒN MÀU HỒNG -->
+    <div id="transition-circle"></div>
+    <div id="transition-text-container">
+        <i class="fa-solid fa-compass fa-spin"></i>
         <div id="transition-text">Đang chuyển hướng...</div>
     </div>
-    
-    <!-- THÔNG BÁO -->
-    <div id="toast">Thông báo</div>
 
-    <!-- MÀN HÌNH 1: GIỚI THIỆU (LANDING PAGE DÀI VÀ CÓ ANIMATION) -->
-    <div id="intro-screen">
-        <div class="intro-hero">
-            <div class="gsap-hero">
-                <h1 class="intro-title">OmniTool Hub</h1>
-                <p class="intro-subtitle">Không gian làm việc kỹ thuật số hoàn hảo của bạn. Xử lý văn bản, tối ưu hình ảnh, công cụ lập trình và vô vàn tiện ích thông minh khác. Tất cả hội tụ trong một giao diện cực mượt, ngay trên trình duyệt.</p>
-                <button class="btn btn-primary" style="font-size: 1.2rem; padding: 1rem 3rem; border-radius: 2rem;" onclick="goFromIntroToAuth()">Trải Nghiệm Ngay</button>
-            </div>
-            <i class="fa-solid fa-angles-down scroll-indicator"></i>
-        </div>
-
-        <div class="intro-section text-center">
-            <h2 style="font-size: 2.5rem; margin-bottom: 1rem;" class="gsap-fade-up">Tại sao chọn OmniTool?</h2>
-            <p style="color: #64748b; font-size: 1.1rem; max-width: 600px; margin: 0 auto;" class="gsap-fade-up">Được thiết kế tỉ mỉ để mang lại hiệu suất tối đa và trải nghiệm thị giác tuyệt vời.</p>
-            
-            <div class="feature-grid">
-                <div class="feature-card glass gsap-card">
-                    <i class="fa-solid fa-bolt feature-icon"></i>
-                    <h3>Tốc Độ Bàn Thờ</h3>
-                    <p>Mọi công cụ đều xử lý cục bộ ngay trên thiết bị của bạn. Không cần tải lại trang, không độ trễ, click là chạy ngay lập tức.</p>
-                </div>
-                <div class="feature-card glass gsap-card">
-                    <i class="fa-solid fa-paintbrush feature-icon"></i>
-                    <h3>Giao Diện Đỉnh Cao</h3>
-                    <p>Chế độ Dark/Light mode linh hoạt. Thiết kế Glassmorphism hiện đại, responsive 100% không lo vỡ khung trên bất kỳ thiết bị nào.</p>
-                </div>
-                <div class="feature-card glass gsap-card">
-                    <i class="fa-solid fa-layer-group feature-icon"></i>
-                    <h3>35+ Tiện Ích Đa Dạng</h3>
-                    <p>Từ lập trình, xử lý ảnh, tạo mã QR, cho đến đếm ngược Pomodoro và tạo tiếng ồn trắng giúp tập trung. Mọi thứ bạn cần đều ở đây.</p>
-                </div>
-                <div class="feature-card glass gsap-card">
-                    <i class="fa-solid fa-shield-halved feature-icon"></i>
-                    <h3>Bảo Mật Tối Đa</h3>
-                    <p>Dữ liệu của bạn không bị gửi đi đâu cả (trừ các tool gọi API công khai). Lưu trữ lịch sử thông minh và an toàn qua Firebase.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="intro-section text-center" style="padding-bottom: 8rem;">
-            <div class="glass p-6 gsap-fade-up" style="border-radius: 2rem; max-width: 800px; margin: 0 auto; border: 2px solid var(--primary);">
-                <h2 style="font-size: 2rem; margin-bottom: 1.5rem;">Bạn Đã Sẵn Sàng?</h2>
-                <p style="margin-bottom: 2rem; color: #64748b;">Đăng nhập một lần, sử dụng mãi mãi. Lưu lại lịch sử làm việc để không bao giờ mất dấu những công cụ yêu thích của bạn.</p>
-                <button class="btn btn-primary w-full" style="font-size: 1.2rem; padding: 1.2rem;" onclick="goFromIntroToAuth()">Tạo Tài Khoản / Đăng Nhập</button>
-            </div>
-        </div>
+    <!-- TOAST THÔNG BÁO -->
+    <div id="toast">
+        <i class="fa-solid fa-circle-check" style="color:var(--pink-accent); font-size:1.2rem;"></i>
+        <span id="toast-message">Thông báo hệ thống</span>
     </div>
 
-    <!-- MÀN HÌNH 2: XÁC THỰC -->
-    <div id="auth-screen">
-        <div class="auth-box glass">
-            <h2 class="text-center" style="font-size:1.5rem; font-weight:700; margin-bottom:0.5rem;">Mở Khóa Không Gian</h2>
-            <p class="text-center" style="font-size:0.875rem; color:#64748b; margin-bottom:1.5rem;">Đăng nhập để lưu lịch sử sử dụng</p>
-            
-            <div class="tab-group">
-                <div class="tab-slider" id="auth-slider" style="left: 0.25rem;"></div>
-                <div class="tab-btn active" onclick="switchAuthTab('login')">Đăng Nhập</div>
-                <div class="tab-btn" onclick="switchAuthTab('register')">Đăng Ký</div>
-            </div>
+    <!-- OVERLAY CHO MOBILE SIDEBAR -->
+    <div id="sidebar-overlay" onclick="toggleMobileSidebar(false)"></div>
 
-            <form id="auth-form" onsubmit="handleAuth(event)">
-                <div style="margin-bottom: 1rem;">
-                    <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Email</label>
-                    <input type="email" id="auth-email" class="input" style="margin-top:0.25rem;" required placeholder="name@example.com">
+    <!-- MÀN HÌNH CHÍNH ỨNG DỤNG -->
+    <div id="app-layout" class="flex">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar-nav">
+            <div class="sidebar-header">
+                <div class="flex items-center gap-2" style="font-weight: 800; font-size: 1.1rem;">
+                    <i class="fa-solid fa-cube" style="color:var(--pink-accent);"></i>
+                    <span>OmniTool Hub</span>
                 </div>
-                <div style="margin-bottom: 1.5rem;">
-                    <label style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Mật khẩu</label>
-                    <input type="password" id="auth-pass" class="input" style="margin-top:0.25rem;" required placeholder="••••••••">
-                </div>
-                <button type="submit" id="auth-submit-btn" class="btn btn-primary w-full">Đăng Nhập Ngay</button>
-                
-                <div style="display:flex; align-items:center; margin: 1.5rem 0;">
-                    <div style="flex:1; height:1px; background:var(--border);"></div>
-                    <span style="padding: 0 1rem; font-size: 0.75rem; color:#64748b;">Hoặc</span>
-                    <div style="flex:1; height:1px; background:var(--border);"></div>
-                </div>
-                
-                <button type="button" onclick="loginGoogle()" class="btn btn-outline w-full flex items-center justify-center gap-2">
-                    <i class="fa-brands fa-google" style="color:#ef4444;"></i> Tiếp tục với Google
+                <button class="btn btn-outline" style="padding:0.25rem 0.5rem; display:none;" id="close-mobile-sidebar" onclick="toggleMobileSidebar(false)">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- MÀN HÌNH 3: ỨNG DỤNG CHÍNH -->
-    <div id="app-layout">
-        <!-- Main Area (Đảo lên trước để dễ chia Flex) -->
+            </div>
+            <!-- Menu Items sẽ được render bằng JS -->
+        </aside>
+        
+        <!-- Main Area -->
         <main class="main-content">
             <header class="header">
-                <div class="flex items-center gap-4">
-                    <button class="menu-toggle-btn" onclick="toggleSidebar()">
+                <div class="flex items-center gap-3">
+                    <button id="mobile-menu-btn" onclick="toggleMobileSidebar(true)" class="btn btn-outline" style="padding: 0.5rem; font-size:1.1rem;">
                         <i class="fa-solid fa-bars"></i>
                     </button>
-                    <button onclick="toggleTheme()" class="btn btn-outline" style="padding: 0.5rem; border-radius: 50%; width: 40px; height: 40px; display:flex; justify-content:center; align-items:center;">
+                    <button onclick="toggleTheme()" class="btn btn-outline" style="padding: 0.5rem; border-radius: 50%; width: 40px; height: 40px;">
                         <i class="fa-solid fa-moon" id="theme-icon"></i>
                     </button>
-                    <span style="font-weight: 700; color: var(--primary);">OmniTool</span>
                 </div>
-                <div class="flex items-center gap-4">
-                    <div id="user-info" style="font-size: 0.875rem; font-weight: 500; display: none;"></div>
-                    <button onclick="logout()" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.8rem; border-radius:2rem;">Đăng xuất</button>
+                <div class="flex items-center gap-3">
+                    <!-- Đã gỡ bỏ thông tin user và nút đăng xuất -->
                 </div>
             </header>
             
-            <section class="workspace">
+            <section class="workspace" id="workspace-scroll-area">
                 <div class="tool-container" id="tool-render-area">
-                    <!-- Tool UI sẽ được inject vào đây -->
-                    <div class="text-center" style="padding: 5rem 0; color: #64748b;">
-                        <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 4rem; margin-bottom: 1.5rem; color: var(--primary); animation: bounce 2s infinite;"></i>
-                        <h2>Chọn một công cụ từ Menu</h2>
-                    </div>
+                    <!-- Nội dung công cụ hoặc Trang giới thiệu sẽ được nạp tại đây -->
                 </div>
             </section>
         </main>
-
-        <!-- Sidebar Navigation -->
-        <aside class="sidebar" id="sidebar-nav"></aside>
     </div>
 
-    <!-- MÃ NGUỒN CHÍNH -->
-    <script type="module">
-        // 1. CẤU HÌNH VÀ KHỞI TẠO FIREBASE SDK 9
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAZiGa7KakG43YbCuYw1VYBwNdGgivVZtU",
-            authDomain: "buctuongghichu.firebaseapp.com",
-            projectId: "buctuongghichu",
-            storageBucket: "buctuongghichu.firebasestorage.app",
-            messagingSenderId: "542301209901",
-            appId: "1:542301209901:web:f142e4a549e50ede0d7fa4",
-            measurementId: "G-V7NQZK0T1H"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        let currentUser = null;
-
-        // Đăng ký ScrollTrigger của GSAP
+    <!-- MÃ NGUỒN CHÍNH: INTRO SECTION & LOGIC 35+ CÔNG CỤ -->
+    <script>
         gsap.registerPlugin(ScrollTrigger);
 
-        // Tiện ích DOM
         const $ = id => document.getElementById(id);
-        
-        // Cải tiến Toast Message
-        window.showToast = (msg, type='success') => {
-            const t = $('toast'); 
-            t.innerHTML = type === 'success' ? `<i class="fa-solid fa-circle-check text-green-500 mr-2"></i> ${msg}` : `<i class="fa-solid fa-circle-exclamation text-red-500 mr-2"></i> ${msg}`;
-            t.style.borderLeftColor = type === 'success' ? '#22c55e' : '#ef4444';
+
+        // Hiển thị Toast Notification
+        window.showToast = (msg) => {
+            const t = $('toast');
+            $('toast-message').innerText = msg;
             t.style.bottom = '24px';
-            setTimeout(() => t.style.bottom = '-100px', 4000);
+            setTimeout(() => { t.style.bottom = '-100px'; }, 3500);
         };
 
-        // Mobile Sidebar Toggle
-        window.toggleSidebar = () => {
-            const sb = $('sidebar-nav');
-            sb.classList.toggle('show');
-        }
-
-        // Animation cuộn cho Intro Screen
-        const initScrollAnimations = () => {
-            gsap.from(".gsap-hero > *", { y: 30, opacity: 0, duration: 0.8, stagger: 0.2, ease: "power3.out", delay: 0.2 });
+        // Hiệu ứng chuyển cảnh Hình tròn Màu Hồng độc đáo
+        window.runTransition = (targetName, callback) => {
+            const container = $('transition-text-container');
+            const textEl = $('transition-text');
             
-            gsap.utils.toArray('.gsap-fade-up').forEach(elem => {
-                gsap.from(elem, {
-                    scrollTrigger: { trigger: elem, start: "top 85%" },
-                    y: 50, opacity: 0, duration: 0.8, ease: "power3.out"
-                });
-            });
-
-            gsap.utils.toArray('.gsap-card').forEach((card, i) => {
-                gsap.from(card, {
-                    scrollTrigger: { trigger: card, start: "top 90%" },
-                    y: 50, opacity: 0, duration: 0.6, delay: i * 0.1, ease: "back.out(1.2)"
-                });
-            });
-        }
-        initScrollAnimations();
-
-        // HIỆU ỨNG CHUYỂN CẢNH TRÒN HỒNG + TEXT
-        const runTransition = (textMsg, callback) => {
+            if (targetName) {
+                textEl.innerText = targetName.includes('Trang Chủ') ? targetName : `Đang chuyển hướng sang: ${targetName}...`;
+            } else {
+                textEl.innerText = 'Đang chuyển hướng...';
+            }
+            
             const maxDim = Math.max(window.innerWidth, window.innerHeight) * 2.5;
-            const circle = $('transition-circle');
-            const txt = $('transition-text');
             
-            txt.innerText = textMsg;
-            
-            let tl = gsap.timeline();
-            // B1: Phóng to hình tròn hồng bọc hết màn hình
-            tl.to(circle, { width: maxDim, height: maxDim, duration: 0.7, ease: "power4.inOut" })
-              // B2: Hiện chữ
-              .to(txt, { opacity: 1, duration: 0.3 })
-              // B3: Đổi màn hình ẩn dưới lớp hồng
-              .call(callback)
-              // B4: Dừng 1 xíu để người dùng đọc chữ, sau đó làm mờ chữ
-              .to(txt, { opacity: 0, duration: 0.2 }, "+=0.8")
-              // B5: Thu nhỏ hình tròn lại
-              .to(circle, { width: 0, height: 0, duration: 0.7, ease: "power4.inOut" });
+            gsap.timeline()
+                .to("#transition-circle", { width: maxDim, height: maxDim, duration: 0.5, ease: "power3.inOut" })
+                .to(container, { opacity: 1, duration: 0.2 }, "-=0.2")
+                .call(() => {
+                    if (callback) callback();
+                })
+                .to(container, { opacity: 0, duration: 0.2, delay: 0.2 })
+                .to("#transition-circle", { width: 0, height: 0, duration: 0.5, ease: "power3.inOut" });
         };
 
-        // Từ Intro sang Đăng nhập
-        window.goFromIntroToAuth = () => {
-            runTransition("Đang chuyển hướng đến Đăng Nhập...", () => {
-                $('intro-screen').style.display = 'none';
-                $('app-layout').style.display = 'none';
-                $('auth-screen').style.display = 'flex';
-                // Reset GSAP positions just in case
-                gsap.set($('auth-screen'), { opacity: 1 });
-            });
-        }
-
-        // Logic UI Auth
-        let authMode = 'login';
-        window.switchAuthTab = (mode) => {
-            authMode = mode;
-            const slider = $('auth-slider');
-            const btns = document.querySelectorAll('.tab-btn');
-            btns.forEach(b => b.classList.remove('active'));
-            if (mode === 'login') {
-                slider.style.left = '0.25rem'; btns[0].classList.add('active');
-                $('auth-submit-btn').innerText = 'Đăng Nhập Ngay';
-            } else {
-                slider.style.left = 'calc(50% - 0.25rem)'; btns[1].classList.add('active');
-                $('auth-submit-btn').innerText = 'Đăng Ký Tài Khoản';
-            }
-        };
-
-        window.handleAuth = (e) => {
-            e.preventDefault();
-            const email = $('auth-email').value; const pass = $('auth-pass').value;
-            const btn = $('auth-submit-btn'); btn.innerText = "Đang xử lý...";
-            
-            if (authMode === 'login') {
-                signInWithEmailAndPassword(auth, email, pass)
-                    .then(() => { showToast('Đăng nhập thành công! Chào mừng trở lại.', 'success'); })
-                    .catch(err => { showToast('Đăng nhập thất bại: '+err.message, 'error'); btn.innerText = "Đăng Nhập Ngay"; });
-            } else {
-                createUserWithEmailAndPassword(auth, email, pass)
-                    .then(() => { showToast('Đăng ký tài khoản thành công! Tận hưởng nhé.', 'success'); })
-                    .catch(err => { showToast('Lỗi đăng ký: '+err.message, 'error'); btn.innerText = "Đăng Ký Tài Khoản"; });
-            }
-        };
-
-        window.loginGoogle = () => {
-            signInWithPopup(auth, new GoogleAuthProvider())
-                .then(() => showToast('Đăng nhập qua Google thành công!', 'success'))
-                .catch(err => showToast('Lỗi: '+err.message, 'error'));
-        };
-
-        window.logout = () => signOut(auth).then(()=> showToast('Đã đăng xuất tài khoản', 'success'));
-
-        // Lắng nghe trạng thái Auth và kích hoạt Chuyển cảnh
-        let isFirstLoad = true;
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                $('user-info').innerText = user.email;
-                $('user-info').style.display = 'block';
-                
-                // Nếu đang ở màn đăng nhập hoặc intro, chuyển sang App
-                if ($('app-layout').style.display !== 'flex') {
-                    if(!isFirstLoad) {
-                        runTransition("Đang chuyển hướng đến Trang Chủ...", () => {
-                            $('intro-screen').style.display = 'none';
-                            $('auth-screen').style.display = 'none';
-                            $('app-layout').style.display = 'flex';
-                        });
-                    } else {
-                        // Vừa vào web đã có session thì vào luôn không cần hiệu ứng
-                        $('intro-screen').style.display = 'none';
-                        $('auth-screen').style.display = 'none';
-                        $('app-layout').style.display = 'flex';
-                    }
-                }
-            } else {
-                currentUser = null;
-                $('user-info').style.display = 'none';
-                // Nếu đang ở App, chuyển về Auth
-                if ($('app-layout').style.display === 'flex' && !isFirstLoad) {
-                    runTransition("Đang đăng xuất an toàn...", () => {
-                        $('app-layout').style.display = 'none';
-                        $('auth-screen').style.display = 'flex';
-                    });
-                }
-            }
-            isFirstLoad = false;
-        });
-
+        // Toggle Theme
         window.toggleTheme = () => {
-            const html = document.documentElement; const icon = $('theme-icon');
-            if(html.getAttribute('data-theme') === 'dark') {
+            const html = document.documentElement; 
+            const icon = $('theme-icon');
+            if (html.getAttribute('data-theme') === 'dark') {
                 html.setAttribute('data-theme', 'light'); icon.className = 'fa-solid fa-sun';
             } else {
                 html.setAttribute('data-theme', 'dark'); icon.className = 'fa-solid fa-moon';
             }
         };
 
-        // Hàm ghi log sử dụng công cụ vào Firestore
-        const logToolUsage = async (toolName) => {
-            if (!currentUser) return;
-            try {
-                await addDoc(collection(db, "user_history"), {
-                    uid: currentUser.uid, email: currentUser.email,
-                    tool: toolName, timestamp: serverTimestamp()
-                });
-            } catch (e) { console.error("Lỗi ghi log:", e); }
+        // Toggle Sidebar Mobile
+        window.toggleMobileSidebar = (open) => {
+            const sb = $('sidebar-nav');
+            const overlay = $('sidebar-overlay');
+            if (open) {
+                sb.classList.add('active');
+                overlay.classList.add('active');
+            } else {
+                sb.classList.remove('active');
+                overlay.classList.remove('active');
+            }
         };
 
-        /* ================= KHO DỮ LIỆU & LOGIC 35+ CÔNG CỤ (GIỮ NGUYÊN CODE CỦA BẠN) ================= */
+        /* ================= BẢN GIỚI THIỆU HOÀNH TRÁNG VÀ CHI TIẾT (INTRO LANDING) ================= */
+        const renderHomeIntro = () => {
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            const homeBtn = $('nav-home-intro');
+            if(homeBtn) homeBtn.classList.add('active');
+
+            const area = $('tool-render-area');
+            area.innerHTML = `
+                <div class="intro-hero scroll-reveal">
+                    <div class="intro-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> Hệ sinh thái công cụ 35+ trong 1</div>
+                    <h1 class="intro-title">OmniTool Hub — Trợ Thủ Kỹ Thuật Số Đa Năng Cho Mọi Người</h1>
+                    <p class="intro-subtitle">
+                        Chào mừng bạn đến với <b>OmniTool Hub</b>, nền tảng tối ưu hóa hiệu suất làm việc toàn diện. Tích hợp trọn bộ bộ công cụ xử lý Văn bản, Hình ảnh, Mã hóa lập trình, QR Code, Mạng viễn thông và Quản lý năng suất — tất cả trên một giao diện hiện đại, tốc độ cao và bảo mật tuyệt đối.
+                    </p>
+                    <div class="flex gap-4 justify-center" style="flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="openTool(TOOLS[1])"><i class="fa-solid fa-rocket"></i> Khám phá công cụ ngay</button>
+                        <a href="#about-detail" class="btn btn-outline"><i class="fa-solid fa-circle-info"></i> Tìm hiểu chi tiết</a>
+                    </div>
+                </div>
+
+                <!-- Thống kê ấn tượng -->
+                <div class="grid-4 scroll-reveal" style="margin-bottom: 4rem;">
+                    <div class="stat-card">
+                        <div class="stat-num">35+</div>
+                        <div class="stat-label">Công cụ tích hợp</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num">100%</div>
+                        <div class="stat-label">Miễn phí & Bảo mật</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num">0.01s</div>
+                        <div class="stat-label">Tốc độ xử lý Client</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num">24/7</div>
+                        <div class="stat-label">Luôn Sẵn Sàng</div>
+                    </div>
+                </div>
+
+                <!-- Tính năng nổi bật -->
+                <div id="about-detail">
+                    <h2 class="section-heading scroll-reveal">Danh Mục Công Cụ Nổi Bật</h2>
+                    <p class="section-desc scroll-reveal">OmniTool Hub được thiết kế module hóa thông minh, hỗ trợ đa dạng nhu cầu công việc từ Coder, Designer cho tới Học sinh & Sinh viên.</p>
+                    
+                    <div class="grid-3 scroll-reveal" style="margin-bottom: 4rem;">
+                        <div class="feature-box">
+                            <div class="feature-icon-wrapper"><i class="fa-solid fa-font"></i></div>
+                            <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">Xử Lý Văn Bản Smart</h3>
+                            <p style="color:#64748b; font-size:0.9rem; line-height:1.6;">Đếm ký tự/từ/đoạn tức thì, chuyển đổi kiểu chữ (UPPERCASE, camelCase, slug-case), làm sạch thẻ HTML và so sánh văn bản Diff trực quan.</p>
+                        </div>
+                        <div class="feature-box">
+                            <div class="feature-icon-wrapper"><i class="fa-solid fa-image"></i></div>
+                            <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">Đồ Họa & Hình Ảnh AI</h3>
+                            <p style="color:#64748b; font-size:0.9rem; line-height:1.6;">Nén dung lượng ảnh không suy hao chất lượng, chuyển đổi JPG/PNG/WebP, xóa phông nền pixel thông minh và chấm màu màn hình Eyedropper.</p>
+                        </div>
+                        <div class="feature-box">
+                            <div class="feature-icon-wrapper"><i class="fa-solid fa-code"></i></div>
+                            <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">Lập Trình & Dữ Liệu</h3>
+                            <p style="color:#64748b; font-size:0.9rem; line-height:1.6;">Format/Beautify JSON, Mã hóa Base64 & URL, chuyển đổi qua lại giữa JSON-CSV, tạo Mockup Data ngẫu nhiên và trình tạo CSS Box Shadow.</p>
+                        </div>
+                        <div class="feature-box">
+                            <div class="feature-icon-wrapper"><i class="fa-solid fa-qrcode"></i></div>
+                            <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">Mã QR & Hệ Thống Link</h3>
+                            <p style="color:#64748b; font-size:0.9rem; line-height:1.6;">Tạo mã QR tùy chỉnh màu sắc, quét QR từ ảnh tải lên, rút gọn liên kết rút gọn siêu tốc và thiết kế trang Bio cá nhân đẳng cấp.</p>
+                        </div>
+                        <div class="feature-box">
+                            <div class="feature-icon-wrapper"><i class="fa-solid fa-network-wired"></i></div>
+                            <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">Tiện Ích Mạng & Hệ Thống</h3>
+                            <p style="color:#64748b; font-size:0.9rem; line-height:1.6;">Kiểm tra độ trễ (Ping) trạng thái website, truy quét thông tin OSINT GitHub và kiểm tra bảo mật kết nối mạng.</p>
+                        </div>
+                        <div class="feature-box">
+                            <div class="feature-icon-wrapper"><i class="fa-solid fa-stopwatch"></i></div>
+                            <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">Tối Ưu Năng Suất</h3>
+                            <p style="color:#64748b; font-size:0.9rem; line-height:1.6;">Đồng hồ đếm ngược Pomodoro chuẩn khoa học, phát âm thanh White Noise tập trung, chuyển văn bản thành giọng nói (TTS) và bảng vẽ Canvas nháp.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lý do lựa chọn OmniTool Hub -->
+                <div class="glass p-8 scroll-reveal" style="border-radius:1.5rem; margin-bottom:4rem;">
+                    <h2 class="section-heading">Tại Sao Bạn Nên Chọn OmniTool Hub?</h2>
+                    <div class="grid-2" style="margin-top:2rem;">
+                        <div class="flex gap-4 items-center">
+                            <i class="fa-solid fa-bolt" style="font-size:2rem; color:var(--pink-accent);"></i>
+                            <div>
+                                <h4 style="font-weight:700; font-size:1.1rem;">Xử lý Client-side cực nhanh</h4>
+                                <p style="color:#64748b; font-size:0.875rem;">Mọi dữ liệu văn bản, tệp tin ảnh đều được xử lý ngay trong trình duyệt của bạn, không lo trễ mạng hay rò rỉ thông tin.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 items-center">
+                            <i class="fa-solid fa-shield-halved" style="font-size:2rem; color:var(--primary);"></i>
+                            <div>
+                                <h4 style="font-weight:700; font-size:1.1rem;">Bảo mật tuyệt đối</h4>
+                                <p style="color:#64748b; font-size:0.875rem;">Không cần đăng nhập, không thu thập dữ liệu cá nhân. Hoạt động hoàn toàn độc lập và an toàn.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            initScrollAnimations();
+        };
+
+        // Khởi tạo Animation khi lướt (ScrollTrigger)
+        const initScrollAnimations = () => {
+            gsap.utils.toArray('.scroll-reveal').forEach((el) => {
+                gsap.fromTo(el, 
+                    { opacity: 0, y: 40, scale: 0.98 }, 
+                    {
+                        opacity: 1, y: 0, scale: 1, duration: 0.7, ease: "power2.out",
+                        scrollTrigger: {
+                            trigger: el,
+                            scroller: "#workspace-scroll-area",
+                            start: "top 88%",
+                            toggleActions: "play none none reverse"
+                        }
+                    }
+                );
+            });
+        };
+
+        /* ================= KHO DỮ LIỆU & LOGIC TẤT CẢ 35+ CÔNG CỤ ================= */
         const TOOLS = [
+            {
+                id: 'home-intro', cat: 'Tổng Quan', name: 'Giới Thiệu Website', icon: 'fa-house',
+                isHome: true
+            },
             // --- VĂN BẢN & NỘI DUNG ---
             {
                 id: 't-wc', cat: 'Văn bản', name: 'Đếm từ & Ký tự', icon: 'fa-font',
                 html: `<textarea id="wc-in" class="input" placeholder="Nhập văn bản..."></textarea>
                        <div class="grid-2" style="margin-top:1rem; text-align:center;">
                            <div class="glass p-4" style="border-radius:0.5rem"><h3>Ký tự</h3><h2 id="wc-char" style="color:var(--primary);font-size:2rem">0</h2></div>
-                           <div class="glass p-4" style="border-radius:0.5rem"><h3>Từ</h3><h2 id="wc-word" style="color:var(--secondary);font-size:2rem">0</h2></div>
+                           <div class="glass p-4" style="border-radius:0.5rem"><h3>Từ</h3><h2 id="wc-word" style="color:var(--pink-accent);font-size:2rem">0</h2></div>
                            <div class="glass p-4" style="border-radius:0.5rem"><h3>Câu</h3><h2 id="wc-sen" style="color:var(--primary);font-size:2rem">0</h2></div>
-                           <div class="glass p-4" style="border-radius:0.5rem"><h3>Đoạn</h3><h2 id="wc-para" style="color:var(--secondary);font-size:2rem">0</h2></div>
+                           <div class="glass p-4" style="border-radius:0.5rem"><h3>Đoạn</h3><h2 id="wc-para" style="color:var(--pink-accent);font-size:2rem">0</h2></div>
                        </div>`,
                 init: () => {
                     $('wc-in').addEventListener('input', e => {
@@ -502,7 +453,7 @@
             {
                 id: 't-clear', cat: 'Văn bản', name: 'Xóa định dạng & dòng trống', icon: 'fa-eraser',
                 html: `<textarea id="cl-in" class="input" placeholder="Dán văn bản có định dạng vào đây..."></textarea>
-                       <div class="flex gap-2" style="margin-top:1rem;">
+                       <div class="flex gap-2" style="margin-top:1rem; flex-wrap:wrap;">
                            <button class="btn btn-primary" id="cl-html">Xóa HTML Tags</button>
                            <button class="btn btn-outline" id="cl-space">Xóa Dòng/Khoảng trắng thừa</button>
                        </div>`,
@@ -538,7 +489,7 @@
                 init: () => {
                     const fonts = {
                         'Math Bold': '𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭',
-                        'Math Italic': '𝘢𝘣𝘤𝘥𝘦𝘧𝘨𝘩𝘪𝘫𝘬𝘭𝘮𝘯𝘰𝘱𝘲𝘳𝘴𝘵𝘶𝘷𝘸𝘹𝘺𝘻𝘈𝘉𝘊𝘋𝘌𝘍𝘎𝘏𝘐𝘑𝘒𝘓𝘔𝘕𝘖𝘗𝘘𝘙𝘚𝘛𝘜𝘝𝘞𝘟𝘠𝘡',
+                        'Math Italic': '𝘢𝘣𝘤𝘥ｴ𝘧𝘨𝘩𝘪𝘫𝘬𝘭𝘮𝘯𝘰𝘱𝘲𝘳𝘴𝘵𝘶𝘷𝘸𝘹𝘺𝘻𝘈𝘉𝘊𝘋𝘌𝘍𝘎𝘏𝘐𝘑𝘒𝘓𝘔𝘕𝘖𝘗𝘘𝘙𝘚𝘛𝘜𝘝𝘞𝘟𝘠𝘡',
                         'Circled': 'ⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏ'
                     };
                     const normal = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -549,9 +500,9 @@
                                 let idx = normal.indexOf(c);
                                 return idx !== -1 ? Array.from(map)[idx] : c;
                             }).join('');
-                            html += `<div class="glass p-4" style="border-radius:0.5rem; display:flex; justify-content:space-between;">
+                            html += `<div class="glass p-4" style="border-radius:0.5rem; display:flex; justify-content:space-between; align-items:center;">
                                 <span>${res}</span>
-                                <button class="btn btn-outline" style="padding:0.25rem 0.5rem" onclick="navigator.clipboard.writeText('${res}');showToast('Đã copy mã font')">Copy</button>
+                                <button class="btn btn-outline" style="padding:0.25rem 0.5rem" onclick="navigator.clipboard.writeText('${res}');showToast('Đã copy!')">Copy</button>
                             </div>`;
                         }
                         $('fn-out').innerHTML = html;
@@ -583,7 +534,7 @@
                 html: `<input type="file" id="ic-in" accept="image/*" class="input">
                        <div style="margin-top:1rem">Chất lượng: <input type="range" id="ic-q" min="1" max="100" value="70"> <span id="ic-qv">70%</span></div>
                        <button class="btn btn-primary w-full" style="margin:1rem 0" id="ic-btn">Nén ảnh</button>
-                       <div class="text-center"><img id="ic-out" style="max-width:100%; border-radius:0.5rem; display:none; margin:0 auto;"><br><a id="ic-dl" class="btn btn-outline hidden mt-2" download="compressed.jpg">Tải xuống</a></div>`,
+                       <div class="text-center"><img id="ic-out" style="max-width:100%; border-radius:0.5rem; display:none"><br><a id="ic-dl" class="btn btn-outline hidden mt-2" download="compressed.jpg">Tải xuống</a></div>`,
                 init: () => {
                     let imgData = null;
                     $('ic-in').onchange = e => {
@@ -597,7 +548,7 @@
                     };
                     $('ic-q').oninput = e => $('ic-qv').innerText = e.target.value + '%';
                     $('ic-btn').onclick = () => {
-                        if(!imgData) return showToast('Vui lòng chọn ảnh!', 'error');
+                        if(!imgData) return showToast('Vui lòng chọn ảnh!');
                         let canvas = document.createElement('canvas');
                         canvas.width = imgData.width; canvas.height = imgData.height;
                         canvas.getContext('2d').drawImage(imgData, 0, 0);
@@ -620,12 +571,12 @@
                         r.readAsDataURL(e.target.files[0]);
                     };
                     $('cv-btn').onclick = () => {
-                        if(!imgData) return showToast('Vui lòng chọn ảnh', 'error');
+                        if(!imgData) return showToast('Hãy chọn ảnh trước');
                         let c = document.createElement('canvas'); c.width = imgData.width; c.height = imgData.height;
                         c.getContext('2d').drawImage(imgData, 0, 0);
                         let fmt = $('cv-fmt').value;
                         $('cv-dl').href = c.toDataURL(fmt); $('cv-dl').download = 'image.' + fmt.split('/')[1];
-                        $('cv-dl').classList.remove('hidden'); showToast('Ảnh đã sẵn sàng tải xuống');
+                        $('cv-dl').classList.remove('hidden'); showToast('Sẵn sàng tải xuống!');
                     }
                 }
             },
@@ -659,9 +610,9 @@
                 id: 'i-bg', cat: 'Hình ảnh', name: 'Xóa phông nền (Basic)', icon: 'fa-wand-magic',
                 html: `<p class="text-center" style="font-size:0.8rem;color:gray">Thuật toán xóa màu dựa trên pixel góc trên cùng bên trái</p>
                        <input type="file" id="bg-in" class="input mt-2">
-                       <div style="margin-top:1rem">Dung sai màu: <input type="range" id="bg-t" min="0" max="100" value="30"></div>
+                       <div style="margin-top:1rem">Dung sai màu (Tolerance): <input type="range" id="bg-t" min="0" max="100" value="30"></div>
                        <button class="btn btn-primary w-full" style="margin:1rem 0" id="bg-btn">Xóa phông</button>
-                       <div class="text-center"><canvas id="bg-c" style="max-width:100%; border:1px dashed gray; background: url('https://upload.wikimedia.org/wikipedia/commons/c/c5/Checkerboard_pattern.svg'); margin: 0 auto;"></canvas></div>`,
+                       <div class="text-center"><canvas id="bg-c" style="max-width:100%;border:1px dashed gray; background: url('https://upload.wikimedia.org/wikipedia/commons/c/c5/Checkerboard_pattern.svg');"></canvas></div>`,
                 init: () => {
                     let img = new Image();
                     $('bg-in').onchange = e => { let r = new FileReader(); r.onload = ev => { img.src=ev.target.result; }; r.readAsDataURL(e.target.files[0]); };
@@ -682,17 +633,17 @@
             {
                 id: 'i-color', cat: 'Hình ảnh', name: 'Lấy mã màu (Eyedropper)', icon: 'fa-eye-dropper',
                 html: `<div class="text-center">
-                          <button class="btn btn-primary" id="ed-btn" style="padding:2rem;font-size:1.5rem"><i class="fa-solid fa-eye-dropper"></i> Chọn màu trên màn hình</button>
+                          <button class="btn btn-primary" id="ed-btn" style="padding:1.5rem 2rem;font-size:1.2rem"><i class="fa-solid fa-eye-dropper"></i> Chọn màu trên màn hình</button>
                           <div id="ed-res" style="margin-top:2rem; font-size:2rem; font-weight:bold; font-family:monospace;"></div>
                        </div>`,
                 init: () => {
                     $('ed-btn').onclick = async () => {
-                        if (!window.EyeDropper) return showToast('Trình duyệt không hỗ trợ (Dùng Chrome/Edge)', 'error');
+                        if (!window.EyeDropper) return showToast('Trình duyệt không hỗ trợ EyeDropper API (Vui lòng dùng Chrome/Edge)');
                         try {
                             const result = await new EyeDropper().open();
                             $('ed-res').innerText = result.sRGBHex;
                             $('ed-res').style.color = result.sRGBHex;
-                        } catch (e) { showToast('Đã hủy chọn màu', 'error'); }
+                        } catch (e) { showToast('Đã hủy chọn màu'); }
                     }
                 }
             },
@@ -726,14 +677,14 @@
                        </div>`,
                 init: () => {
                     let io = $('en-in');
-                    $('b64-e').onclick = () => { try { io.value = btoa(io.value) } catch(e){showToast("Lỗi Encode Base64", "error")} };
-                    $('b64-d').onclick = () => { try { io.value = atob(io.value) } catch(e){showToast("Lỗi Decode Base64", "error")} };
+                    $('b64-e').onclick = () => { try { io.value = btoa(io.value) } catch(e){showToast("Lỗi Encode")} };
+                    $('b64-d').onclick = () => { try { io.value = atob(io.value) } catch(e){showToast("Lỗi Decode")} };
                     $('url-e').onclick = () => io.value = encodeURIComponent(io.value);
                     $('url-d').onclick = () => io.value = decodeURIComponent(io.value);
                 }
             },
             {
-                id: 'd-conv', cat: 'Lập trình', name: 'JSON ↔ CSV', icon: 'fa-exchange',
+                id: 'd-conv', cat: 'Lập trình', name: 'JSON ↔ CSV', icon: 'fa-right-left',
                 html: `<div class="grid-2"><textarea id="cv-i" class="input" placeholder="Input (JSON mảng / CSV)..."></textarea><textarea id="cv-o" class="input" readonly placeholder="Output..."></textarea></div>
                        <div class="flex gap-2" style="margin-top:1rem">
                            <button class="btn btn-primary" id="j2c">JSON -> CSV</button>
@@ -745,7 +696,7 @@
                             let obj = JSON.parse($('cv-i').value); if(!Array.isArray(obj)) obj = [obj];
                             let keys = Object.keys(obj[0]);
                             $('cv-o').value = keys.join(',') + '\n' + obj.map(o => keys.map(k => `"${o[k]||''}"`).join(',')).join('\n');
-                        } catch(e) { showToast('JSON không hợp lệ', 'error'); }
+                        } catch(e) { showToast('JSON không hợp lệ'); }
                     };
                     $('c2j').onclick = () => {
                         let lines = $('cv-i').value.trim().split('\n'); if(lines.length<2) return;
@@ -759,7 +710,7 @@
             {
                 id: 'd-mock', cat: 'Lập trình', name: 'Mockup Data Generator', icon: 'fa-database',
                 html: `Số lượng Row: <input type="number" id="mk-n" class="input mb-2" value="10">
-                       <button class="btn btn-primary w-full" id="mk-btn">Tạo dữ liệu giả (JSON)</button>
+                       <button class="btn btn-primary w-full" id="mk-btn" style="margin-top:0.5rem;">Tạo dữ liệu giả (JSON)</button>
                        <textarea id="mk-out" class="input mt-2" style="margin-top:1rem" readonly></textarea>`,
                 init: () => {
                     const fNames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng"];
@@ -777,8 +728,8 @@
             },
             {
                 id: 'd-uuid', cat: 'Lập trình', name: 'Tạo UUID / API Key', icon: 'fa-key',
-                html: `<div class="text-center p-6 glass" style="border-radius:1rem;font-size:1.5rem;font-family:monospace;margin-bottom:1rem;word-break:break-all;" id="uu-out">-</div>
-                       <div class="flex gap-2 justify-center">
+                html: `<div class="text-center p-6 glass" style="border-radius:1rem;font-size:1.5rem;font-family:monospace;margin-bottom:1rem" id="uu-out">-</div>
+                       <div class="flex gap-2 justify-center" style="flex-wrap:wrap;">
                            <button class="btn btn-primary" id="uu-v4">Tạo UUID v4</button>
                            <button class="btn btn-outline" id="uu-api">Tạo API Key (Hex 64)</button>
                        </div>`,
@@ -796,13 +747,13 @@
                        <input type="text" id="re-flg" class="input" placeholder="Flags (VD: g, i, m)" style="margin: 0.5rem 0;" value="g">
                        <textarea id="re-txt" class="input" placeholder="Đoạn test string..."></textarea>
                        <button class="btn btn-primary w-full" id="re-btn" style="margin-top:1rem">Test</button>
-                       <div id="re-res" class="glass p-4 mt-2" style="border-radius:0.5rem;margin-top:1rem;word-break:break-all;"></div>`,
+                       <div id="re-res" class="glass p-4 mt-2" style="border-radius:0.5rem;margin-top:1rem"></div>`,
                 init: () => {
                     $('re-btn').onclick = () => {
                         try {
                             let re = new RegExp($('re-pat').value, $('re-flg').value);
                             let txt = $('re-txt').value; let match = txt.match(re);
-                            $('re-res').innerHTML = match ? `Tìm thấy ${match.length} kết quả:<br>` + match.map(m=>`<span style="background:var(--primary);color:white;padding:2px 4px;border-radius:4px;margin-right:4px;display:inline-block;margin-bottom:4px;">${m}</span>`).join('') : 'Không khớp.';
+                            $('re-res').innerHTML = match ? `Tìm thấy ${match.length} kết quả:<br>` + match.map(m=>`<span style="background:var(--primary);color:white;padding:2px 6px;border-radius:4px;margin-right:4px;">${m}</span>`).join('') : 'Không khớp.';
                         } catch(e) { $('re-res').innerText = 'RegEx lỗi: ' + e.message; }
                     }
                 }
@@ -815,7 +766,7 @@
                                 Blur: <input type="range" id="cs-b" min="0" max="100" value="15" class="w-full">
                                 Spread: <input type="range" id="cs-s" min="-50" max="50" value="-3" class="w-full">
                                 Color: <input type="color" id="cs-c" value="#000000"> </div>
-                          <div class="flex items-center justify-center p-6"><div id="cs-box" style="width:150px;height:150px;background:var(--primary);border-radius:1rem"></div></div>
+                          <div class="flex items-center justify-center p-6"><div id="cs-box" style="width:140px;height:140px;background:var(--primary);border-radius:1rem"></div></div>
                        </div>
                        <textarea id="cs-out" class="input" style="margin-top:1rem;height:60px" readonly></textarea>`,
                 init: () => {
@@ -837,7 +788,7 @@
                 html: `<input type="text" id="qr-v" class="input" placeholder="Nhập Link / Text...">
                        <div class="flex items-center gap-4 mt-2" style="margin-top:1rem">Màu: <input type="color" id="qr-c" value="#000000">
                        <button class="btn btn-primary flex-1" id="qr-btn">Tạo QR Code</button></div>
-                       <div class="flex justify-center p-6"><div id="qrcode" style="background:white;padding:1rem"></div></div>`,
+                       <div class="flex justify-center p-6"><div id="qrcode" style="background:white;padding:1rem;border-radius:0.5rem"></div></div>`,
                 init: () => {
                     $('qr-btn').onclick = () => {
                         $('qrcode').innerHTML = '';
@@ -854,8 +805,8 @@
                     const html5QrCode = new Html5Qrcode("reader");
                     $('qrr-f').onchange = e => {
                         if(e.target.files.length == 0) return;
-                        html5QrCode.scanFile(e.target.files[0], true).then(t => { $('qrr-res').innerHTML = `<a href="${t}" target="_blank" style="color:var(--primary)">${t}</a>`; showToast('Quét thành công'); })
-                        .catch(err => showToast('Không tìm thấy mã QR trong ảnh', 'error'));
+                        html5QrCode.scanFile(e.target.files[0], true).then(t => { $('qrr-res').innerHTML = `<a href="${t}" target="_blank" style="color:var(--pink-accent); font-weight:bold;">${t}</a>`; showToast('Quét QR thành công!'); })
+                        .catch(err => showToast('Không tìm thấy mã QR trong ảnh'));
                     };
                 }
             },
@@ -870,7 +821,7 @@
                         try {
                             let res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`);
                             if(res.ok) $('sh-o').value = await res.text(); else throw new Error();
-                        } catch(e) { showToast('Lỗi API rút gọn link', 'error'); }
+                        } catch(e) { showToast('Lỗi API rút gọn link'); }
                         $('sh-btn').innerText = 'Rút gọn ngay';
                     }
                 }
@@ -882,20 +833,20 @@
                                Bio: <input type="text" id="bi-d" class="input" value="Welcome to my profile">
                                Link 1: <input type="text" id="bi-l1" class="input" placeholder="Label,URL">
                                Link 2: <input type="text" id="bi-l2" class="input" placeholder="Label,URL"></div>
-                          <div id="bi-preview" class="glass p-4 text-center flex-col gap-2" style="border-radius:1rem;align-items:center;border:4px solid var(--border); overflow-hidden;"></div>
+                          <div id="bi-preview" class="glass p-4 text-center flex-col gap-2" style="border-radius:1rem;align-items:center;border:2px solid var(--border)"></div>
                        </div>
-                       <button class="btn btn-primary w-full mt-2" style="margin-top:1rem" id="bi-g">Tạo mã HTML</button>`,
+                       <button class="btn btn-primary w-full mt-2" style="margin-top:1rem" id="bi-g">Tạo mã HTML Bio</button>`,
                 init: () => {
                     const update = () => {
                         let n = $('bi-n').value, d = $('bi-d').value;
                         let l1 = $('bi-l1').value.split(','), l2 = $('bi-l2').value.split(',');
                         let html = `<h3>${n}</h3><p style="font-size:0.8rem;color:gray">${d}</p>`;
-                        if(l1[1]) html += `<a href="${l1[1]}" target="_blank" class="btn btn-outline w-full" style="display:block;margin-top:0.5rem;overflow:hidden;text-overflow:ellipsis;">${l1[0]}</a>`;
-                        if(l2[1]) html += `<a href="${l2[1]}" target="_blank" class="btn btn-outline w-full" style="display:block;margin-top:0.5rem;overflow:hidden;text-overflow:ellipsis;">${l2[0]}</a>`;
+                        if(l1[1]) html += `<a href="${l1[1]}" target="_blank" class="btn btn-outline w-full" style="display:block;margin-top:0.5rem">${l1[0]}</a>`;
+                        if(l2[1]) html += `<a href="${l2[1]}" target="_blank" class="btn btn-outline w-full" style="display:block;margin-top:0.5rem">${l2[0]}</a>`;
                         $('bi-preview').innerHTML = html;
                     };
                     ['bi-n','bi-d','bi-l1','bi-l2'].forEach(id => $(id).oninput = update); update();
-                    $('bi-g').onclick = () => { navigator.clipboard.writeText(`<!DOCTYPE html><html><body style="text-align:center;font-family:sans-serif;padding:2rem">`+$('bi-preview').innerHTML+`</body></html>`); showToast('Đã copy mã nguồn HTML!'); }
+                    $('bi-g').onclick = () => { navigator.clipboard.writeText(`<!DOCTYPE html><html><body style="text-align:center;font-family:sans-serif;padding:2rem">`+$('bi-preview').innerHTML+`</body></html>`); showToast('Đã copy mã HTML trang Bio!'); }
                 }
             },
             {
@@ -904,7 +855,7 @@
                        Password: <input type="text" id="wf-p" class="input" style="margin:0.5rem 0">
                        Bảo mật: <select id="wf-t" class="input"><option value="WPA">WPA/WPA2</option><option value="WEP">WEP</option><option value="nopass">Không Pass</option></select>
                        <button class="btn btn-primary w-full" id="wf-btn" style="margin:1rem 0">Tạo QR Wi-Fi</button>
-                       <div class="flex justify-center p-6"><div id="wf-qr" style="background:white;padding:1rem"></div></div>`,
+                       <div class="flex justify-center p-6"><div id="wf-qr" style="background:white;padding:1rem;border-radius:0.5rem"></div></div>`,
                 init: () => {
                     $('wf-btn').onclick = () => {
                         let str = `WIFI:T:${$('wf-t').value};S:${$('wf-s').value};P:${$('wf-p').value};;`;
@@ -951,7 +902,7 @@
                        Lãi suất (%/năm): <input type="number" id="fi-r" class="input mb-2" value="6">
                        Số năm: <input type="number" id="fi-t" class="input" value="5">
                        <button class="btn btn-primary w-full" id="fi-btn" style="margin:1rem 0">Tính Toán</button>
-                       <div id="fi-out" class="glass p-4 text-center" style="font-size:1.5rem;font-weight:bold;color:var(--primary);border-radius:0.5rem">0 VNĐ</div>`,
+                       <div id="fi-out" class="glass p-4 text-center" style="font-size:1.5rem;font-weight:bold;color:var(--pink-accent);border-radius:0.5rem">0 VNĐ</div>`,
                 init: () => {
                     $('fi-btn').onclick = () => {
                         let P=parseFloat($('fi-p').value), r=parseFloat($('fi-r').value)/100, t=parseFloat($('fi-t').value);
@@ -961,7 +912,7 @@
                 }
             },
             {
-                id: 'c-unit', cat: 'Tính toán', name: 'Chuyển đổi Đơn vị (Độ dài)', icon: 'fa-ruler',
+                id: 'c-unit', cat: 'Tính toán', name: 'Chuyển đổi Đơn vị', icon: 'fa-ruler',
                 html: `<div class="grid-2">
                            <input type="number" id="un-v" class="input" value="1">
                            <select id="un-f" class="input"><option value="1">Mét (m)</option><option value="100">Centimet (cm)</option><option value="1000">Milimet (mm)</option><option value="0.001">Kilomet (km)</option></select>
@@ -973,7 +924,7 @@
                        </div>`,
                 init: () => {
                     const calc = () => {
-                        let val = parseFloat($('un-v').value) / parseFloat($('un-f').value); 
+                        let val = parseFloat($('un-v').value) / parseFloat($('un-f').value);
                         $('un-o').value = val * parseFloat($('un-t').value);
                     };
                     ['un-v','un-f','un-t'].forEach(id => $(id).oninput = calc); calc();
@@ -983,7 +934,7 @@
                 id: 'c-time', cat: 'Tính toán', name: 'Đổi Múi Giờ Quốc Tế', icon: 'fa-earth-asia',
                 html: `<div class="glass p-6 text-center" style="border-radius:1rem">
                           <h3>Giờ hiện tại của bạn:</h3><h2 id="tm-l" style="color:var(--primary);margin-bottom:1rem"></h2>
-                          <h3>New York (EST):</h3><h2 id="tm-ny" style="color:var(--secondary);margin-bottom:1rem"></h2>
+                          <h3>New York (EST):</h3><h2 id="tm-ny" style="color:var(--pink-accent);margin-bottom:1rem"></h2>
                           <h3>Tokyo (JST):</h3><h2 id="tm-tk" style="color:#22c55e"></h2>
                        </div>`,
                 init: () => {
@@ -1029,12 +980,12 @@
 
             // --- NĂNG SUẤT & ÂM THANH ---
             {
-                id: 'p-tts', cat: 'Năng suất', name: 'Đọc Văn Bản (TTS)', icon: 'fa-volume-high',
+                id: 'p-tts', cat: 'Năng suất', name: 'Text to Speech (Giọng nói)', icon: 'fa-volume-high',
                 html: `<textarea id="ts-t" class="input" placeholder="Nhập văn bản tiếng Việt..."></textarea>
                        <button class="btn btn-primary w-full" id="ts-btn" style="margin-top:1rem">Đọc văn bản</button>`,
                 init: () => {
                     $('ts-btn').onclick = () => {
-                        if(!window.speechSynthesis) return showToast('Trình duyệt không hỗ trợ', 'error');
+                        if(!window.speechSynthesis) return showToast('Trình duyệt không hỗ trợ Speech API');
                         let u = new SpeechSynthesisUtterance($('ts-t').value); u.lang = 'vi-VN';
                         speechSynthesis.speak(u);
                     }
@@ -1043,7 +994,7 @@
             {
                 id: 'p-pomo', cat: 'Năng suất', name: 'Đồng hồ Pomodoro', icon: 'fa-stopwatch',
                 html: `<div class="text-center">
-                          <div id="pm-t" style="font-size:6rem;font-weight:900;color:var(--primary);font-family:monospace">25:00</div>
+                          <div id="pm-t" style="font-size:5rem;font-weight:900;color:var(--pink-accent);font-family:monospace">25:00</div>
                           <div class="flex justify-center gap-2">
                               <button class="btn btn-primary" id="pm-s">Bắt đầu</button>
                               <button class="btn btn-outline" id="pm-r">Reset</button>
@@ -1061,10 +1012,10 @@
                 }
             },
             {
-                id: 'p-noise', cat: 'Năng suất', name: 'Âm thanh tập trung (White Noise)', icon: 'fa-headphones',
+                id: 'p-noise', cat: 'Năng suất', name: 'Âm thanh White Noise', icon: 'fa-headphones',
                 html: `<div class="text-center p-6 glass" style="border-radius:1rem">
-                          <button class="btn btn-primary" id="wn-btn" style="padding:1.5rem;font-size:1.5rem; border-radius: 2rem;"><i class="fa-solid fa-play"></i> Bật / Tắt Tiếng Ồn Trắng</button>
-                          <p style="margin-top:1rem;color:gray">Tạo ra bởi Web Audio API</p>
+                          <button class="btn btn-primary" id="wn-btn" style="padding:1.5rem;font-size:1.2rem"><i class="fa-solid fa-play"></i> Bật / Tắt Tiếng Ồn Trắng</button>
+                          <p style="margin-top:1rem;color:gray;font-size:0.85rem">Sử dụng Web Audio API trực tiếp trên hệ thống</p>
                        </div>`,
                 init: () => {
                     let ctx, src;
@@ -1081,83 +1032,75 @@
             },
             {
                 id: 'p-draw', cat: 'Năng suất', name: 'Bảng Vẽ Nháp (Canvas)', icon: 'fa-pen-nib',
-                html: `<div class="flex justify-between" style="margin-bottom:1rem">
-                           <input type="color" id="dw-c" value="#ef4444"><button class="btn btn-outline" id="dw-cl">Xóa Bảng</button>
+                html: `<div class="flex justify-between items-center" style="margin-bottom:1rem">
+                           <input type="color" id="dw-c" value="#ef4444">
+                           <button class="btn btn-outline" id="dw-cl">Xóa Bảng</button>
                        </div>
-                       <canvas id="dw-cv" width="800" height="400" style="background:white;width:100%; height:auto; border-radius:0.5rem;border:1px solid gray;cursor:crosshair;"></canvas>`,
+                       <canvas id="dw-cv" width="800" height="400" style="background:white;width:100%;border-radius:0.5rem;border:1px solid var(--border);cursor:crosshair;"></canvas>`,
                 init: () => {
                     let c = $('dw-cv'), ctx = c.getContext('2d'), draw=false;
-                    // Fix tọa độ vẽ trên màn hình có scale
-                    const pos = e => { 
-                        let r = c.getBoundingClientRect(); 
-                        let scaleX = c.width / r.width;
-                        let scaleY = c.height / r.height;
-                        let clientX = e.clientX || (e.touches && e.touches[0].clientX);
-                        let clientY = e.clientY || (e.touches && e.touches[0].clientY);
-                        return { x: (clientX - r.left) * scaleX, y: (clientY - r.top) * scaleY }; 
-                    };
-                    
-                    const startDraw = e => { draw = true; ctx.beginPath(); let p = pos(e); ctx.moveTo(p.x, p.y); };
-                    const drawing = e => { 
-                        if(!draw) return; e.preventDefault(); 
-                        let p = pos(e); ctx.lineTo(p.x, p.y); ctx.strokeStyle=$('dw-c').value; ctx.lineWidth=3; ctx.stroke(); 
-                    };
-                    const stopDraw = () => draw = false;
-
-                    c.onmousedown = startDraw; c.onmousemove = drawing; c.onmouseup = stopDraw; c.onmouseout = stopDraw;
-                    // Hỗ trợ cảm ứng trên điện thoại
-                    c.addEventListener('touchstart', startDraw, {passive: false});
-                    c.addEventListener('touchmove', drawing, {passive: false});
-                    c.addEventListener('touchend', stopDraw);
-
+                    const pos = e => { let r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+                    c.onmousedown = e => { draw = true; ctx.beginPath(); let p = pos(e); ctx.moveTo(p.x, p.y); };
+                    c.onmousemove = e => { if(!draw) return; let p = pos(e); ctx.lineTo(p.x, p.y); ctx.strokeStyle=$('dw-c').value; ctx.lineWidth=3; ctx.stroke(); };
+                    c.onmouseup = () => draw = false; c.onmouseout = () => draw = false;
                     $('dw-cl').onclick = () => ctx.clearRect(0,0,c.width,c.height);
                 }
             }
         ];
 
-        // 3. RENDER UI & ROUTING
+        // Render Menu Sidebar
         const renderSidebar = () => {
             const sb = $('sidebar-nav');
             const cats = [...new Set(TOOLS.map(t => t.cat))];
+            
             cats.forEach(c => {
-                const head = document.createElement('div'); head.className = 'nav-category'; head.innerText = c; sb.appendChild(head);
+                const head = document.createElement('div'); 
+                head.className = 'nav-category'; 
+                head.innerText = c; 
+                sb.appendChild(head);
+
                 TOOLS.filter(t => t.cat === c).forEach(tool => {
-                    const item = document.createElement('div'); item.className = 'nav-item'; item.id = 'nav-' + tool.id;
+                    const item = document.createElement('div'); 
+                    item.className = 'nav-item'; 
+                    item.id = 'nav-' + tool.id;
                     item.innerHTML = `<i class="fa-solid ${tool.icon} w-5"></i> <span>${tool.name}</span>`;
                     item.onclick = () => {
-                        // Kích hoạt transition hình tròn hồng khi chuyển tool
-                        runTransition(`Đang mở: ${tool.name}...`, () => {
-                            openTool(tool);
-                            // Tự động đóng sidebar trên mobile
-                            if(window.innerWidth <= 768) {
-                                sb.classList.remove('show');
-                            }
-                        });
+                        toggleMobileSidebar(false);
+                        if (tool.isHome) {
+                            runTransition('Đang chuyển hướng đến Trang Chủ', () => {
+                                renderHomeIntro();
+                            });
+                        } else {
+                            runTransition(tool.name, () => {
+                                openTool(tool);
+                            });
+                        }
                     };
                     sb.appendChild(item);
                 });
             });
         };
 
-        const openTool = (tool) => {
+        // Mở Công Cụ Cụ Thể
+        window.openTool = (tool) => {
             document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
             const activeNav = $('nav-' + tool.id);
             if(activeNav) activeNav.classList.add('active');
             
             const area = $('tool-render-area');
-            area.innerHTML = `<div class="tool-title"><i class="fa-solid ${tool.icon}"></i> ${tool.name}</div>
-                              <div class="tool-desc">Thuộc danh mục: ${tool.cat}</div>
-                              ${tool.html}`;
-                              
-            // Hiệu ứng GSAP mượt mà sau khi chuyển cảnh xong
-            gsap.fromTo(area, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
+            area.innerHTML = `
+                <div class="tool-title"><i class="fa-solid ${tool.icon}"></i> ${tool.name}</div>
+                <div class="tool-desc">Thuộc danh mục: ${tool.cat}</div>
+                ${tool.html}`;
             
-            tool.init();
-            logToolUsage(tool.name);
+            gsap.fromTo(area, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" });
+            
+            if (tool.init) tool.init();
         };
 
-        // Init App
+        // Khởi động giao diện ngay lập tức
         renderSidebar();
+        renderHomeIntro();
 
     </script>
 </body>
